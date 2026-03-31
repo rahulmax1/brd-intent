@@ -21,6 +21,7 @@ const staticDocs: DocEntry[] = [
   { slug: 'prompts-guide', label: 'Prompts Guide — AI Examples', path: join(DOCS, 'prompts-guide.md'), category: 'project' },
   { slug: 'workflows', label: 'Workflows — Pentest Process', path: join(DOCS, 'workflows.md'), category: 'project' },
   { slug: 'scripts-reference', label: 'Scripts Reference', path: join(DOCS, 'scripts-reference.md'), category: 'project' },
+  { slug: 'deployment', label: 'Deployment Guide — Vercel', path: join(DOCS, 'deployment.md'), category: 'project' },
 
   // Build log - keep Rahul's specs as examples
   { slug: 'spec-ai-editor', label: 'AI Model Editor Design', path: join(DOCS, 'superpowers', 'specs', '2026-03-17-ai-model-editor-design.md'), category: 'build-log' },

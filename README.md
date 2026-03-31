@@ -102,7 +102,16 @@ Generate a BRD automatically or export your model for reporting.
 
 ## Deployment
 
-See [Getting Started Guide](docs/getting-started.md) for deployment instructions to Vercel.
+See the **[Deployment Guide](docs/deployment.md)** for complete instructions on deploying to Vercel, including:
+- GitHub repository setup
+- Vercel KV database configuration
+- Environment variables setup
+- Production verification
+
+Quick deploy:
+```bash
+vercel --scope db-iz
+```
 
 ## License
 
