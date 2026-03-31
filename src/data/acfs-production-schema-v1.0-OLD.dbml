@@ -1,0 +1,1003 @@
+// =============================================================================
+// ACFS VBS Portal - Production Schema v1.0
+// =============================================================================
+// Generated: 2026-03-26
+// Source: Merged from Intent Model v0.8.0 + VBS_DBML operational enhancements
+// Domain: Australian Container Freight Station logistics portal
+// Compliance: Implements BR-001 through BR-033, GST Act 1999, HVNL CoR
+// =============================================================================
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+Enum company_type {
+  wholesale_freight_forwarder
+  freight_forwarder
+  transport_carrier
+  customer
+  clearing_agent
+}
+
+Enum user_role {
+  acfs_admin        [note: 'Full privileges - user management, slot config, overrides']
+  acfs_user         [note: 'Restricted privileges - DO validation, booking verification']
+  lsp               [note: 'Logistics Service Provider - external company users']
+}
+
+Enum au_state {
+  NSW
+  VIC
+  QLD
+  SA
+  WA
+  TAS
+  NT
+  ACT
+}
+
+Enum slot_day_of_week {
+  monday
+  tuesday
+  wednesday
+  thursday
+  friday
+  saturday
+  sunday
+}
+
+Enum container_status {
+  received    [note: 'Container received at ACFS warehouse']
+  unpacking   [note: 'Container being unpacked']
+  unpacked    [note: 'All HBLs extracted and available for pickup']
+}
+
+// Physical progression through supply chain (BR-027 dimension 1)
+Enum milestone_status {
+  on_vessel     [note: 'Container on ship, not yet at port']
+  at_wharf      [note: 'Container at port wharf']
+  in_yard       [note: 'Container moved to yard storage']
+  unpacked      [note: 'Goods unpacked and ready - required for booking per BR-001']
+  collected     [note: 'Physically picked up by booking party']
+}
+
+// Business/delegation state (BR-027 dimension 2) - orthogonal to milestone
+Enum hbl_status {
+  unassigned    [note: 'Not yet allocated to any LSP']
+  assigned      [note: 'Allocated to primary LSP by ACFS']
+  delegated     [note: 'LSP passed to another party - cannot book per BR-004']
+  booked        [note: 'Pickup scheduled - cannot delegate per BR-004']
+}
+
+Enum customs_status {
+  pending             [note: 'Awaiting customs clearance']
+  partial_clearance   [note: 'Some items cleared, some held']
+  fully_cleared       [note: 'All goods cleared - required for booking per BR-001']
+  held                [note: 'Held by customs for inspection/quarantine']
+}
+
+Enum release_type {
+  do_required     [note: 'Delivery Order must be uploaded and validated']
+  free_release    [note: 'No DO required - auto-approved for pickup']
+}
+
+Enum do_validation_status {
+  not_provided        [note: 'DO not yet uploaded']
+  uploaded            [note: 'DO uploaded, awaiting validation']
+  pending_validation  [note: 'ACFS staff reviewing DO']
+  validated           [note: 'DO confirmed valid - booking can proceed']
+  flagged             [note: 'DO incorrect - requires correction and re-upload']
+  not_required        [note: 'Free release or under-bond - no DO needed']
+}
+
+// Booking lifecycle per intent model
+Enum booking_status {
+  draft                 [note: 'Being created - not yet paid']
+  booked                [note: 'Confirmed and paid - awaiting pickup date']
+  pending_processing    [note: 'ACFS staff verifying DOs and details']
+  processed             [note: 'All DOs validated - ready for physical pickup']
+  collected             [note: 'Goods physically collected - derived when all HBLs reach collected milestone']
+  cancelled             [note: 'Booking cancelled by LSP or ACFS']
+}
+
+Enum payment_status {
+  pending     [note: 'Payment initiated but not confirmed']
+  completed   [note: 'Payment successful - booking confirmed']
+  failed      [note: 'Payment gateway rejected transaction']
+  refunded    [note: 'Payment refunded - processed outside VBS but status tracked']
+}
+
+Enum delegation_method {
+  existing_lsp      [note: 'Delegate to registered LSP account']
+  one_off_p4tc      [note: 'Delegate to one-off party via email (deferred Phase 1)']
+}
+
+Enum delegation_status {
+  active    [note: 'Delegation in effect']
+  revoked   [note: 'Delegation cancelled by ACFS - HBLs revert to delegator']
+}
+
+Enum notification_type {
+  do_invalid                [note: 'DO marked invalid - requires correction']
+  booking_confirmation      [note: 'Booking confirmed with reference number']
+  booking_cancellation      [note: 'Booking cancelled by LSP or ACFS']
+  booking_modified          [note: 'Booking details changed']
+  user_invitation           [note: 'New user invited with sign-in link']
+  hbl_assignment            [note: 'HBLs assigned to LSP']
+  user_removal              [note: 'User account deactivated']
+  delegation_notification   [note: 'HBLs delegated to party']
+}
+
+Enum notification_status {
+  pending   [note: 'Queued for sending']
+  sent      [note: 'Successfully delivered']
+  failed    [note: 'Delivery failed - see error_message']
+}
+
+// =============================================================================
+// TABLES
+// =============================================================================
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE GROUP: Companies & Users
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table companies {
+  Note: '''
+  All external logistics organisations that interact with the VBS portal:
+  - Wholesale Freight Forwarders (aggregate multiple FFs, work directly with ACFS)
+  - Freight Forwarders (book pickups and delegate shipments)
+  - Transport Carriers (physical pickup execution)
+  - Customers (end consignees)
+  - Clearing Agents (customs clearance)
+
+  ABN captured for Australian tax compliance (GST invoice generation).
+  '''
+
+  id              int           [pk, increment]
+  company_name    varchar(255)  [not null]
+  company_type    company_type  [not null]
+  company_id      varchar(100)  [unique, note: 'External identifier from wholesale FF CSV export or client onboarding']
+  branch_code     varchar(50)   [note: 'Multiple branches may exist per company']
+  abn             char(11)      [note: 'Australian Business Number - 11 digits no spaces - required for GST invoices']
+  email           varchar(255)  [not null, unique, note: 'Primary contact email for notifications']
+  state           au_state      [note: 'Company primary state for GST treatment']
+  is_active       boolean       [not null, default: true]
+  created_at      timestamp     [not null, default: `now()`]
+  updated_at      timestamp     [not null, default: `now()`]
+
+  indexes {
+    (company_type, is_active) [name: 'idx_companies_type_active']
+    abn [name: 'idx_companies_abn']
+    email [name: 'idx_companies_email']
+  }
+}
+
+Table users {
+  Note: '''
+  Platform users covering three roles:
+  - ACFS Admin: Full privileges (user mgmt, slot config, overrides)
+  - ACFS User: Restricted privileges (DO validation, booking verification)
+  - LSP: External logistics company users
+
+  ACFS users authenticate via Okta SSO.
+  LSP users authenticate via email/password with one-time invitation link (72hr expiry per BR-014).
+  Multiple people at a company may share a single LSP account (company-level login model).
+  '''
+
+  id              int           [pk, increment]
+  company_id      int           [null, note: 'NULL for ACFS Admin/User who belong to no external company']
+  first_name      varchar(100)  [not null]
+  last_name       varchar(100)  [not null]
+  email           varchar(255)  [not null, unique]
+  role            user_role     [not null]
+  okta_id         varchar(255)  [null, unique, note: 'Populated for ACFS users authenticating via Okta SSO']
+  password_hash   varchar(255)  [null, note: 'Populated only for external LSP users']
+  is_active       boolean       [not null, default: true]
+  archived_at     timestamp     [null, note: 'Soft delete timestamp - record retained for audit but access disabled']
+  created_at      timestamp     [not null, default: `now()`]
+  updated_at      timestamp     [not null, default: `now()`]
+
+  indexes {
+    email [name: 'idx_users_email']
+    company_id [name: 'idx_users_company_id']
+    okta_id [name: 'idx_users_okta_id']
+    (role, is_active) [name: 'idx_users_role_active']
+  }
+}
+
+Table user_invitations {
+  Note: '''
+  Tracks one-time password-set invitation links generated when ACFS Admin creates new LSP user.
+  Token expires in 72 hours per BR-014.
+  Once used, token is voided.
+  Expired unused tokens indicate failed onboarding that may need re-sending.
+  '''
+
+  id          int           [pk, increment]
+  user_id     int           [not null]
+  token       varchar(512)  [not null, unique, note: 'Secure random token for password-set link']
+  sent_at     timestamp     [not null, default: `now()`]
+  expires_at  timestamp     [not null, note: '72 hours from sent_at']
+  used_at     timestamp     [null, note: 'Set when user completes password setup']
+
+  indexes {
+    token [name: 'idx_user_invitations_token']
+    user_id [name: 'idx_user_invitations_user_id']
+    (expires_at, used_at) [name: 'idx_user_invitations_expiry']
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE GROUP: Sites & Slots
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table sites {
+  Note: '''
+  Physical ACFS warehouse/depot locations where containers are received, unpacked, and pickups occur.
+  State field required for Australian address compliance and GST treatment.
+  Multiple sites may share a branch code.
+  '''
+
+  id              int           [pk, increment]
+  site_name       varchar(255)  [not null, unique]
+  branch_code     varchar(50)   [note: 'Site branch identifier - multiple sites can share']
+  address_line1   varchar(255)  [not null]
+  address_line2   varchar(255)
+  suburb          varchar(100)  [not null]
+  state           au_state      [not null]
+  postcode        char(4)       [not null, note: 'Australian 4-digit postcode']
+  is_active       boolean       [not null, default: true]
+  created_at      timestamp     [not null, default: `now()`]
+  updated_at      timestamp     [not null, default: `now()`]
+
+  indexes {
+    (state, is_active) [name: 'idx_sites_state_active']
+    branch_code [name: 'idx_sites_branch_code']
+  }
+}
+
+Table slots {
+  Note: '''
+  Configurable pickup time windows at each ACFS site, managed by ACFS Admin.
+
+  **Cutoff Structure (BR-005):**
+  - booking_cutoff: relative day + time (e.g., "previous_working_day" + "16:00")
+  - change_cutoff: when modifications trigger late change fee or require ACFS override
+  - Supports "previous working day at 4 PM" type rules (cannot be done with simple hours offset)
+
+  **Capacity (BR-005):**
+  - No hard capacity limits per BR-005 ("density indicator only")
+  - heat_map_threshold provides visual guidance but does NOT block bookings
+
+  **Holidays:**
+  - is_blocked = true for holiday/blackout dates (calendar overlay per BR-026)
+  '''
+
+  id                              int               [pk, increment]
+  site_id                         int               [not null]
+  slot_name                       varchar(255)      [not null, note: 'Human-readable name for slot template']
+  slot_area                       varchar(100)      [note: 'Physical area or gate within site (e.g., Gate 1, Zone A)']
+  day_of_week                     slot_day_of_week  [not null]
+  start_time                      time              [not null]
+  end_time                        time              [not null]
+
+  // Structured cutoffs per BR-005
+  booking_cutoff_relative_day     varchar(50)       [not null, note: 'previous_working_day | same_day | two_days_prior | etc.']
+  booking_cutoff_time             time              [not null, note: 'e.g., 16:00 for 4 PM']
+  change_cutoff_relative_day      varchar(50)       [not null]
+  change_cutoff_time              time              [not null]
+
+  // Optional density indicator (Phase 1 nice-to-have)
+  heat_map_threshold              int               [note: 'Threshold for visual density indicator - does NOT block bookings']
+
+  // Administrative
+  is_blocked                      boolean           [not null, default: false, note: 'Holiday or blackout date - slot unavailable']
+  is_active                       boolean           [not null, default: true]
+  created_at                      timestamp         [not null, default: `now()`]
+  updated_at                      timestamp         [not null, default: `now()`]
+
+  indexes {
+    site_id [name: 'idx_slots_site_id']
+    (day_of_week, start_time) [name: 'idx_slots_schedule']
+    is_active [name: 'idx_slots_is_active']
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE GROUP: Shipments & Delivery Orders
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table containers {
+  Note: '''
+  Physical shipping containers received at ACFS warehouse.
+  One container holds multiple shipments (HBLs) from potentially multiple customers.
+  Multiple containers may share one ocean_bl.
+
+  Maximus ERP is source of truth for container data.
+  maximus_reference links back to the Wholesale FF order in Maximus.
+  '''
+
+  id                  int               [pk, increment]
+  container_number    varchar(50)       [not null, unique, note: 'Standard container identifier (e.g., MSCU4729183)']
+  ocean_bl            varchar(100)      [note: 'Ocean bill of lading - multiple containers may share']
+  site_id             int               [not null, note: 'Which ACFS site received this container']
+  status              container_status  [not null, default: 'received']
+  received_at         timestamp         [not null]
+  unpacked_at         timestamp         [null, note: 'Set when status transitions to unpacked']
+  maximus_reference   varchar(255)      [null, note: 'Wholesale FF order ID in Maximus ERP']
+  created_at          timestamp         [not null, default: `now()`]
+  updated_at          timestamp         [not null, default: `now()`]
+
+  indexes {
+    container_number [name: 'idx_containers_number']
+    ocean_bl [name: 'idx_containers_ocean_bl']
+    (site_id, status) [name: 'idx_containers_site_status']
+  }
+}
+
+Table hbls {
+  Note: '''
+  House Bill of Lading - core shipment entity in VBS.
+  Each HBL is one consignment within a container.
+
+  **Data Sources:**
+  - Maximus ERP: weight, volume, customs status, milestones (lowest-level HBL data)
+  - AGS Feed: HBL hierarchy, master HBL refs, consignee data (OQ-034 BLOCKER)
+
+  **Two Orthogonal Dimensions (BR-027):**
+  1. milestone: Physical progress (on_vessel → at_wharf → in_yard → unpacked → collected)
+  2. hbl_status: Business/booking state (unassigned → assigned → delegated → booked)
+  An HBL can be "in_yard" (physical) while "delegated" (business) simultaneously.
+
+  **Booking Readiness (BR-001):**
+  - milestone = 'unpacked' or later
+  - customs_status = 'fully_cleared'
+  - Either do_waived = true OR all DOs validated
+
+  **Fee Calculation:**
+  chargeable_weight = max(weight_kg, volume_m3) per HBL
+  total_fee = chargeable_weight × rate_per_kg (from pricing_zones)
+  '''
+
+  id                      int               [pk, increment]
+  container_id            int               [not null]
+
+  // Primary identifiers
+  hbl_number              varchar(100)      [not null, unique, note: 'Primary identifier - lowest-level house bill from Maximus']
+  alt_hbl_reference       varchar(100)      [null, note: 'Parent/master HBL reference (e.g., AGS 500-prefix master) from AGS feed']
+  import_ref              varchar(100)      [null, note: 'Import order reference for booking list view']
+
+  // Physical attributes
+  description             text              [note: 'Goods description from Maximus']
+  weight_kg               decimal(10,3)     [note: 'Actual weight in kilograms']
+  volume_m3               decimal(10,3)     [note: 'Volume in cubic meters']
+  chargeable_weight       decimal(10,3)     [note: 'Computed: max(weight_kg, volume_m3) - basis for fee calculation']
+  quantity                int               [note: 'Number of packages']
+  pack_type               varchar(100)      [note: 'Package type description']
+
+  // Two orthogonal dimensions (BR-027)
+  milestone               milestone_status  [not null, default: 'on_vessel', note: 'Physical progress - synced from Maximus']
+  hbl_status              hbl_status        [not null, default: 'unassigned', note: 'Business state - managed within VBS']
+
+  // Customs and clearance
+  customs_status          customs_status    [not null, default: 'pending', note: 'Must be fully_cleared before booking per BR-001']
+  customs_clearance_date  date              [null]
+
+  // Under-bond workflow (BR-002)
+  under_bond              boolean           [not null, default: false, note: 'Manual flag set by LSP/ACFS - goods moving between bonded facilities']
+  under_bond_verified     boolean           [not null, default: false, note: 'ACFS verification of under-bond status']
+
+  // Release and storage
+  release_type            release_type      [not null, default: 'do_required', note: 'Per tier: do_required or free_release']
+  do_waived               boolean           [not null, default: false, note: 'Derived: true when release_type = free_release OR under_bond = true']
+  last_free_storage_date  date              [null, note: 'After this date, storage fees apply']
+  storage_fee_applicable  boolean           [not null, default: false, note: 'Computed from last_free_storage_date vs current date']
+
+  // Critical for dispatch planning (BR-031)
+  pickup_site_id          int               [not null, note: 'Which warehouse to send truck to - MUST be visible and filterable in HBL views']
+
+  // Consignee from AGS feed (OQ-034)
+  consignee_name          varchar(255)      [note: 'Next party in chain - from AGS feed not Maximus (too inconsistent)']
+  consignee_account_code  varchar(100)      [note: 'Account identifier from AGS']
+
+  // Assignment
+  assigned_company_id     int               [null, note: 'LSP allocated to this HBL by ACFS or auto-assignment']
+
+  // Integration references
+  maximus_hbl_id          varchar(255)      [null, note: 'Source system record ID in Maximus ERP for bidirectional sync']
+
+  created_at              timestamp         [not null, default: `now()`]
+  updated_at              timestamp         [not null, default: `now()`]
+
+  indexes {
+    hbl_number [name: 'idx_hbls_number']
+    alt_hbl_reference [name: 'idx_hbls_alt_ref']
+    container_id [name: 'idx_hbls_container_id']
+    assigned_company_id [name: 'idx_hbls_assigned_company']
+    pickup_site_id [name: 'idx_hbls_pickup_site']
+    (milestone, hbl_status) [name: 'idx_hbls_dual_dimension']
+    consignee_account_code [name: 'idx_hbls_consignee']
+    maximus_hbl_id [name: 'idx_hbls_maximus_id']
+  }
+}
+
+Table hbl_custody_chain {
+  Note: '''
+  Records each delegation hop in chain of custody for a shipment.
+
+  **Typical Journey:**
+  - Hop 1: ACFS assigns to Wholesale FF (from_company_id = NULL)
+  - Hop 2: Wholesale FF delegates to Freight Forwarder
+  - Hop 3: FF delegates to Transport Carrier
+
+  Each hop triggers a new Delivery Order.
+  hop_sequence provides ordering for audit trail display.
+  ACFS sees full chain; LSPs see hop-by-hop per C-009 (immediate downstream only).
+  '''
+
+  id                  int               [pk, increment]
+  hbl_id              int               [not null]
+  from_company_id     int               [null, note: 'NULL when ACFS initiates first hop to Wholesale FF']
+  to_company_id       int               [not null, note: 'Company receiving custody']
+  hop_sequence        int               [not null, note: 'Ordinal position in chain: 1 = first hop from ACFS']
+  delegation_method   delegation_method [note: 'existing_lsp or one_off_p4tc']
+  assigned_at         timestamp         [not null, default: `now()`]
+  created_at          timestamp         [not null, default: `now()`]
+
+  indexes {
+    hbl_id [name: 'idx_custody_hbl_id']
+    (hbl_id, hop_sequence) [unique, name: 'uq_custody_hbl_hop']
+    from_company_id [name: 'idx_custody_from_company']
+    to_company_id [name: 'idx_custody_to_company']
+  }
+}
+
+Table delegations {
+  Note: '''
+  First-class delegation entity for tracking and management.
+  Records delegation action separately from custody chain (which is audit trail).
+  Allows ACFS to revoke delegations per acfs:r13.
+  Multiple HBLs can be included in one delegation via delegation_hbls junction.
+  '''
+
+  id                      int               [pk, increment]
+  delegator_company_id    int               [not null, note: 'Company initiating delegation']
+  delegatee_company_id    int               [null, note: 'NULL for P4TC delegations (one-off parties)']
+  delegatee_email         varchar(255)      [null, note: 'For P4TC delegations - receives magic link']
+  delegation_method       delegation_method [not null]
+  status                  delegation_status [not null, default: 'active']
+  created_at              timestamp         [not null, default: `now()`]
+  revoked_at              timestamp         [null]
+  revoked_by_user_id      int               [null, note: 'ACFS user who revoked delegation']
+
+  indexes {
+    delegator_company_id [name: 'idx_delegations_delegator']
+    delegatee_company_id [name: 'idx_delegations_delegatee']
+    status [name: 'idx_delegations_status']
+  }
+}
+
+Table delegation_hbls {
+  Note: 'Junction table linking delegations to HBLs (one delegation can cover multiple shipments)'
+
+  delegation_id   int   [not null]
+  hbl_id          int   [not null]
+
+  indexes {
+    (delegation_id, hbl_id) [pk, name: 'pk_delegation_hbls']
+    hbl_id [name: 'idx_delegation_hbls_hbl_id']
+  }
+}
+
+Table delivery_orders {
+  Note: '''
+  Delivery Order (DO) - release authority document issued at each custody hop.
+
+  **One-to-Many Relationship (BR-002):**
+  - Each HBL can have multiple DOs (one per delegation tier)
+  - Each tier uploads independently - no inheritance
+  - Final DO before pickup is issued in end customer name, not Transport Carrier
+
+  **Validation Workflow:**
+  - not_provided → uploaded → pending_validation → validated | flagged
+  - If flagged, LSP re-uploads → pending_validation again
+  - not_required when release_type = free_release OR under_bond = true
+
+  **Booking Readiness:**
+  All DOs linked to booking must reach validation_status = 'validated' before warehouse staff can process.
+  DO validation is HBL-centric per BR-018 (separate from pickup verification).
+  '''
+
+  id                      int                     [pk, increment]
+  hbl_id                  int                     [not null]
+  custody_chain_id        int                     [null, note: 'The specific custody hop that triggered this DO']
+
+  issued_by_company_id    int                     [not null, note: 'Company issuing DO']
+  issued_to_company_id    int                     [not null, note: 'For final hop, this is end customer company']
+
+  do_number               varchar(100)            [null, note: 'DO reference number if present']
+  document_url            text                    [null, note: 'URL to uploaded DO document in object storage']
+  tier_level              int                     [note: 'Which level in HBL hierarchy this DO covers']
+
+  validation_status       do_validation_status    [not null, default: 'not_provided']
+  validated_by_user_id    int                     [null, note: 'ACFS user who performed validation']
+  validated_at            timestamp               [null]
+  invalidation_reason     text                    [null, note: 'Captured when status = flagged - triggers email to booking party']
+
+  created_at              timestamp               [not null, default: `now()`]
+  updated_at              timestamp               [not null, default: `now()`]
+
+  indexes {
+    hbl_id [name: 'idx_dos_hbl_id']
+    (hbl_id, tier_level) [name: 'idx_dos_hbl_tier']
+    custody_chain_id [name: 'idx_dos_custody_chain']
+    validation_status [name: 'idx_dos_validation_status']
+    issued_to_company_id [name: 'idx_dos_issued_to']
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE GROUP: Bookings & Payments
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table bookings {
+  Note: '''
+  Pickup booking made by LSP (or P4TC deferred) for one or more HBLs at specific ACFS slot.
+
+  **Lifecycle (per intent model):**
+  draft → booked (payment confirmed) → pending_processing (ACFS verifying) → processed (ready) → collected (derived) → cancelled
+
+  **Payment Required:**
+  Payment must complete before booking transitions from draft to booked.
+
+  **Booking Readiness:**
+  All HBLs in booking must meet: milestone=unpacked, customs=fully_cleared, DOs validated.
+  System validates readiness before allowing booking confirmation.
+
+  **Chain of Responsibility (CoR):**
+  Driver and vehicle fields support Heavy Vehicle National Law compliance.
+  driver_licence_number used by warehouse staff to verify identity on arrival.
+
+  **Modifications (BR-015):**
+  - Truck/driver changeable anytime until collected
+  - Slot/HBL changes allowed before change_cutoff only
+  - Cost-impacting changes after cutoff require ACFS override
+  - ACFS can override all cutoffs
+  - P4TC cannot self-service modify (must contact ACFS)
+  '''
+
+  id                          int             [pk, increment]
+  booking_reference           varchar(50)     [not null, unique, note: 'System-generated human-readable reference']
+
+  // Slot details
+  slot_id                     int             [not null]
+  slot_date                   date            [not null, note: 'Calendar date of pickup']
+
+  // Booking party
+  booked_by_company_id        int             [not null]
+  booked_by_user_id           int             [null, note: 'NULL for P4TC bookings (deferred)']
+  booked_by_email             varchar(255)    [null, note: 'For P4TC bookings - receives confirmations']
+
+  // Status
+  status                      booking_status  [not null, default: 'draft']
+
+  // Driver and vehicle (CoR compliance)
+  driver_name                 varchar(255)    [not null]
+  driver_licence_number       varchar(50)     [not null, note: 'Verified by warehouse staff on arrival']
+  driver_phone                varchar(20)     [note: 'Optional contact number']
+  truck_rego                  varchar(20)     [not null, note: 'Vehicle registration - CoR compliance']
+  truck_details               text            [note: 'Additional vehicle description']
+
+  // Site induction and T&Cs (BR-017)
+  site_induction_completed    boolean         [not null, default: false, note: 'Whether driver completed ACFS site induction']
+  site_induction_skipped      boolean         [not null, default: false, note: 'True if driver already has site_induction on file']
+  terms_accepted_at           timestamp       [null, note: 'When booking party accepted booking T&Cs + driver site induction']
+
+  // Fees (GST compliance per A New Tax System (GST) Act 1999)
+  total_fee_excl_gst          decimal(10,2)   [not null, note: 'Total fee before GST']
+  gst_amount                  decimal(10,2)   [not null, note: '10% GST on total_fee_excl_gst']
+  total_fee_incl_gst          decimal(10,2)   [not null, note: 'Final amount charged']
+
+  // Modifications (BR-015)
+  is_late_change              boolean         [not null, default: false, note: 'Set when change made after change_cutoff']
+  late_change_fee             decimal(10,2)   [not null, default: 0, note: 'Additional fee for late modifications']
+  last_modified_at            timestamp       [null]
+  last_modified_by_user_id    int             [null]
+
+  // Administrative
+  notes                       text            [null, note: 'Internal ACFS notes']
+  cancelled_at                timestamp       [null]
+  cancelled_by_user_id        int             [null]
+  cancellation_reason         text            [null, note: 'Required when ACFS cancels - per BR-022']
+  processed_at                timestamp       [null, note: 'Set when ACFS warehouse staff finalises booking']
+  processed_by_user_id        int             [null]
+
+  created_at                  timestamp       [not null, default: `now()`]
+  updated_at                  timestamp       [not null, default: `now()`]
+
+  indexes {
+    booking_reference [name: 'idx_bookings_reference']
+    (slot_id, slot_date) [name: 'idx_bookings_slot']
+    booked_by_company_id [name: 'idx_bookings_company_id']
+    status [name: 'idx_bookings_status']
+    truck_rego [name: 'idx_bookings_truck_rego']
+    driver_licence_number [name: 'idx_bookings_driver_licence']
+  }
+}
+
+Table booking_hbls {
+  Note: '''
+  Junction table linking bookings to HBLs.
+  Multiple HBLs may be grouped into one booking (same load).
+
+  **Per-HBL Fee Breakdown (BR-019):**
+  Stores snapshot of chargeable_weight, rate, and calculated fee at booking time.
+  Enables display of fee breakdown per HBL in booking detail view.
+  Formula: per_hbl_fee = chargeable_weight × rate
+  Total booking fee = SUM(per_hbl_fee) + minimum_charge
+  '''
+
+  id                  int             [pk, increment]
+  booking_id          int             [not null]
+  hbl_id              int             [not null]
+
+  // Fee calculation snapshot at booking time
+  chargeable_weight   decimal(10,3)   [not null, note: 'max(weight_kg, volume_m3) from HBL at booking time']
+  rate                decimal(10,4)   [not null, note: 'Rate applied from pricing_zones at booking time']
+  per_hbl_fee         decimal(10,2)   [not null, note: 'chargeable_weight × rate']
+
+  created_at          timestamp       [not null, default: `now()`]
+
+  indexes {
+    booking_id [name: 'idx_booking_hbls_booking_id']
+    hbl_id [name: 'idx_booking_hbls_hbl_id']
+    (booking_id, hbl_id) [unique, name: 'uq_booking_hbl']
+  }
+}
+
+Table payments {
+  Note: '''
+  Payment record for each booking.
+  Payment gateway abstracted (Stripe initially, potential swap to Compay).
+
+  **Lifecycle:**
+  pending → completed (booking confirmed) | failed (retry required)
+  completed → refunded (processed outside VBS but status recorded)
+
+  **GST Compliance:**
+  Full GST breakdown stored for Australian tax reporting.
+  gst_amount = 10% per A New Tax System (GST) Act 1999.
+  '''
+
+  id                      int             [pk, increment]
+  booking_id              int             [not null]
+
+  amount_excl_gst         decimal(10,2)   [not null]
+  gst_amount              decimal(10,2)   [not null, note: '10% GST per Australian tax law']
+  total_amount            decimal(10,2)   [not null]
+
+  payment_gateway         varchar(50)     [note: 'stripe | compay - abstracted for future swap']
+  payment_gateway_ref     varchar(255)    [note: 'Transaction reference from external gateway']
+  transaction_reference   varchar(255)    [note: 'Internal transaction reference']
+
+  status                  payment_status  [not null, default: 'pending']
+  payment_timestamp       timestamp       [null, note: 'When payment completed']
+  processed_at            timestamp       [null]
+
+  created_at              timestamp       [not null, default: `now()`]
+
+  indexes {
+    booking_id [name: 'idx_payments_booking_id']
+    payment_gateway_ref [name: 'idx_payments_gateway_ref']
+    status [name: 'idx_payments_status']
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE GROUP: Pricing
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table pricing_zones {
+  Note: '''
+  Rate zone configuration per ACFS site for booking fee calculation.
+
+  **Fee Formula:**
+  per_hbl_fee = chargeable_weight_kg × rate_per_kg
+  total_booking_fee = MAX(SUM(per_hbl_fee), minimum_charge)
+  final_amount = total_booking_fee × (1 + gst_rate)
+
+  **Temporal Validity:**
+  effective_from/effective_to allows historical rate tracking.
+  effective_to = NULL indicates currently active rate.
+
+  **Phase 1:**
+  Single flat rate per site.
+  Future: may become per-slot or per-region.
+  '''
+
+  id              int             [pk, increment]
+  site_id         int             [not null]
+  zone_name       varchar(100)    [note: 'Zone identifier within site']
+
+  rate_per_kg     decimal(10,4)   [not null, note: 'Rate applied per chargeable kilogram']
+  minimum_charge  decimal(10,2)   [not null, note: 'Minimum booking fee regardless of weight']
+  gst_rate        decimal(5,4)    [not null, default: 0.1000, note: 'Australian GST rate - default 10% (0.1000)']
+
+  effective_from  date            [not null]
+  effective_to    date            [null, note: 'NULL indicates this is the currently active rate']
+  is_active       boolean         [not null, default: true]
+
+  created_at      timestamp       [not null, default: `now()`]
+  updated_at      timestamp       [not null, default: `now()`]
+
+  indexes {
+    site_id [name: 'idx_pricing_site_id']
+    (site_id, effective_from, effective_to) [name: 'idx_pricing_temporal']
+    is_active [name: 'idx_pricing_is_active']
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE GROUP: Driver Records (BR-016)
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table driver_records {
+  Note: '''
+  Saved driver details for reuse across bookings.
+  Scoped per LSP company account per BR-016.
+  Built up organically by booking parties - no pre-population.
+
+  **Visibility:**
+  Drivers added by one LSP user are visible to all users within that company.
+  NOT visible to other companies or ACFS.
+  P4TC users do not have saved driver records (deferred).
+
+  **Site Induction:**
+  If site_induction_completed = true, booking flow skips induction acceptance step.
+  '''
+
+  id                          int           [pk, increment]
+  company_id                  int           [not null, note: 'LSP company this driver belongs to']
+
+  driver_name                 varchar(255)  [not null]
+  driver_licence_number       varchar(50)   [not null, note: 'Used to uniquely identify driver within company']
+  driver_phone                varchar(20)   [note: 'Optional contact number']
+  default_truck_rego          varchar(20)   [note: 'Default vehicle but can be overridden per booking']
+
+  site_induction_completed    boolean       [not null, default: false, note: 'Whether driver completed ACFS site induction']
+  site_induction_date         date          [null, note: 'When induction was completed']
+
+  is_active                   boolean       [not null, default: true]
+  created_at                  timestamp     [not null, default: `now()`]
+  updated_at                  timestamp     [not null, default: `now()`]
+
+  indexes {
+    company_id [name: 'idx_driver_records_company_id']
+    (company_id, driver_licence_number) [unique, name: 'uq_driver_company_licence']
+    is_active [name: 'idx_driver_records_is_active']
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE GROUP: Notifications
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table email_notifications {
+  Note: '''
+  Audit log of all system-triggered email notifications sent by VBS.
+
+  **Notification Types:**
+  - DO invalidation alerts to booking parties
+  - Booking confirmations with reference number
+  - Booking cancellations and modifications
+  - User invitations with sign-in links (72hr expiry)
+  - HBL assignment notifications
+  - User removal alerts
+  - Delegation notifications
+
+  **P4TC Support:**
+  secure_link_token and otp_code support magic link + OTP auth (deferred Phase 1).
+  recipient_user_id NULL for unregistered parties.
+  '''
+
+  id                    int                 [pk, increment]
+
+  recipient_email       varchar(255)        [not null]
+  recipient_user_id     int                 [null, note: 'NULL for P4TC or unregistered booking parties']
+  recipient_company_id  int                 [null, note: 'Company of recipient if known']
+
+  notification_type     notification_type   [not null]
+  related_entity_type   varchar(50)         [null, note: 'Polymorphic reference: booking | hbl | delegation | user']
+  related_entity_id     int                 [null, note: 'ID of related entity for audit traceability']
+
+  subject               varchar(500)        [note: 'Email subject line']
+  body                  text                [note: 'Email body content']
+  secure_link_token     varchar(512)        [null, note: 'For P4TC magic links (deferred)']
+  otp_code              varchar(10)         [null, note: 'For P4TC OTP verification (deferred)']
+
+  sent_at               timestamp           [null, note: 'When successfully sent']
+  status                notification_status [not null, default: 'pending']
+  error_message         text                [null, note: 'Populated if status = failed']
+
+  created_at            timestamp           [not null, default: `now()`]
+
+  indexes {
+    recipient_email [name: 'idx_notifications_recipient_email']
+    recipient_user_id [name: 'idx_notifications_recipient_user_id']
+    (notification_type, status) [name: 'idx_notifications_type_status']
+    (related_entity_type, related_entity_id) [name: 'idx_notifications_entity']
+  }
+}
+
+// =============================================================================
+// RELATIONSHIPS
+// =============================================================================
+
+// Companies & Users
+Ref: users.company_id > companies.id
+Ref: user_invitations.user_id > users.id
+
+// Sites & Slots
+Ref: slots.site_id > sites.id
+
+// Containers & HBLs
+Ref: containers.site_id > sites.id
+Ref: hbls.container_id > containers.id
+Ref: hbls.assigned_company_id > companies.id
+Ref: hbls.pickup_site_id > sites.id
+
+// Custody Chain & Delegations
+Ref: hbl_custody_chain.hbl_id > hbls.id
+Ref: hbl_custody_chain.from_company_id > companies.id
+Ref: hbl_custody_chain.to_company_id > companies.id
+Ref: delegations.delegator_company_id > companies.id
+Ref: delegations.delegatee_company_id > companies.id
+Ref: delegations.revoked_by_user_id > users.id
+Ref: delegation_hbls.delegation_id > delegations.id
+Ref: delegation_hbls.hbl_id > hbls.id
+
+// Delivery Orders
+Ref: delivery_orders.hbl_id > hbls.id
+Ref: delivery_orders.custody_chain_id > hbl_custody_chain.id
+Ref: delivery_orders.issued_by_company_id > companies.id
+Ref: delivery_orders.issued_to_company_id > companies.id
+Ref: delivery_orders.validated_by_user_id > users.id
+
+// Bookings
+Ref: bookings.slot_id > slots.id
+Ref: bookings.booked_by_company_id > companies.id
+Ref: bookings.booked_by_user_id > users.id
+Ref: bookings.last_modified_by_user_id > users.id
+Ref: bookings.cancelled_by_user_id > users.id
+Ref: bookings.processed_by_user_id > users.id
+
+// Booking HBLs Junction
+Ref: booking_hbls.booking_id > bookings.id
+Ref: booking_hbls.hbl_id > hbls.id
+
+// Payments
+Ref: payments.booking_id > bookings.id
+
+// Pricing
+Ref: pricing_zones.site_id > sites.id
+
+// Driver Records
+Ref: driver_records.company_id > companies.id
+
+// Notifications
+Ref: email_notifications.recipient_user_id > users.id
+Ref: email_notifications.recipient_company_id > companies.id
+
+// =============================================================================
+// SCHEMA NOTES
+// =============================================================================
+
+Note production_schema_notes: '''
+# ACFS VBS Portal - Production Schema v1.0
+
+## Schema Provenance
+This production schema merges:
+1. **Intent Model v0.8.0** (business requirements, BR-001 through BR-033)
+2. **VBS_DBML** (operational enhancements, Australian compliance)
+
+## Critical Business Rules Encoded
+
+**BR-001**: Delegation at any milestone; booking requires milestone='unpacked' + customs='fully_cleared'
+**BR-002**: DO required per tier; waived by under_bond=true or release_type='free_release'
+**BR-004**: Either delegate OR book per HBL, never both (mutual exclusivity)
+**BR-005**: Slot cutoffs are relative day + time (not simple hours); no hard capacity limits
+**BR-016**: Driver records scoped per LSP company account
+**BR-019**: Per-HBL fee breakdown stored in booking_hbls junction
+**BR-027**: Two orthogonal HBL dimensions (milestone + hbl_status)
+**BR-031**: pickup_site_id MUST be visible and filterable in HBL views
+
+## Data Sources (Integration Points)
+
+**Maximus ERP:**
+- Lowest-level HBL data (weight, volume, customs status)
+- Container data
+- Milestone updates (periodic batch sync)
+
+**AGS Feed:**
+- HBL hierarchy relationships
+- Master HBL references
+- Consignee data (OQ-034 BLOCKER - exact source TBD)
+
+**Payment Gateway:**
+- Stripe initially (abstracted for future swap to Compay)
+- Payment confirmations
+
+## Australian Compliance
+
+**GST Act 1999:**
+- 10% GST applied to all booking fees
+- Full GST breakdown stored (amount_excl_gst, gst_amount, total_incl_gst)
+- ABN captured on companies table for invoice generation
+
+**Heavy Vehicle National Law (CoR):**
+- Driver licence number and truck registration recorded
+- Chain of Responsibility compliance via booking audit trail
+
+## Phase 1 Deferrals
+
+- P4TC actor (one-off party-to-collect) - deferred to fast follow
+- Gatehouse separate actor - deferred (merged into ACFS for Phase 1)
+- Driver site induction tracking - included but simplified
+- Heat map threshold - optional nice-to-have
+
+## Implementation Notes
+
+**Slot Cutoffs:**
+Use relative day calculation logic:
+- "previous_working_day" = last Monday-Friday before slot_date
+- "same_day" = slot_date
+- "two_days_prior" = slot_date - 2 calendar days
+Combine with cutoff_time to get absolute cutoff timestamp.
+
+**HBL Booking Readiness:**
+```
+bookable = (
+  milestone IN ('unpacked', 'collected') AND
+  customs_status = 'fully_cleared' AND
+  (do_waived = true OR all_dos_validated = true)
+)
+```
+
+**Chargeable Weight:**
+Computed on read, not stored independently:
+```
+chargeable_weight = GREATEST(weight_kg, volume_m3)
+```
+
+**Storage Fee:**
+Computed on read from last_free_storage_date:
+```
+storage_fee_applicable = (CURRENT_DATE > last_free_storage_date)
+```
+
+## Index Strategy
+
+**High-traffic queries:**
+- HBL list filtered by company, site, status, milestone
+- Booking search by reference, truck rego, driver licence
+- DO validation queue filtered by status
+
+**Composite indexes:**
+- (milestone, hbl_status) for HBL dual-dimension filtering
+- (site_id, day_of_week, start_time) for slot availability
+- (related_entity_type, related_entity_id) for notification audit trail
+
+## Version History
+
+- v1.0 (2026-03-26): Initial production schema
+  - Merged Intent Model v0.8.0 + VBS_DBML operational enhancements
+  - Implements all BR-001 through BR-033
+  - Australian GST and CoR compliance
+  - Ready for implementation
+
+---
+Generated: 2026-03-26
+Last Updated: 2026-03-26
+Status: Production-Ready
+'''

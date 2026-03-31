@@ -1,0 +1,668 @@
+{
+  "_screens": {
+    "lsp-login": {
+      "label": "Login",
+      "icon": "LogIn",
+      "actor": "lsp",
+      "refs": [
+        "OQ-019"
+      ],
+      "status": "not-built"
+    },
+    "lsp-dashboard": {
+      "label": "Dashboard",
+      "icon": "LayoutDashboard",
+      "actor": "lsp",
+      "refs": [
+        "lsp:r1",
+        "lsp:r2",
+        "BR-009"
+      ],
+      "status": "done"
+    },
+    "lsp-delegate": {
+      "label": "Delegate",
+      "icon": "ArrowRightLeft",
+      "actor": "lsp",
+      "refs": [
+        "lsp:r3",
+        "lsp-delegates-shipments",
+        "BR-004",
+        "BR-013"
+      ],
+      "status": "done"
+    },
+    "lsp-book": {
+      "label": "Book Pickup",
+      "icon": "CalendarCheck",
+      "actor": "lsp",
+      "refs": [
+        "lsp:r4",
+        "lsp-books-pickup",
+        "BR-001",
+        "BR-017",
+        "BR-019"
+      ],
+      "status": "done"
+    },
+    "lsp-view-edit": {
+      "label": "View / Edit Booking",
+      "icon": "Eye",
+      "actor": "lsp",
+      "refs": [
+        "lsp:r8",
+        "lsp-modifies-booking",
+        "BR-015"
+      ],
+      "status": "done"
+    },
+    "lsp-cancel": {
+      "label": "Cancel Booking",
+      "icon": "XCircle",
+      "actor": "lsp",
+      "refs": [
+        "lsp-cancels-booking",
+        "BR-022",
+        "C-003"
+      ],
+      "status": "done"
+    },
+    "lsp-upload-do": {
+      "label": "Upload DO",
+      "icon": "Upload",
+      "actor": "lsp",
+      "refs": [
+        "lsp:r6",
+        "BR-003",
+        "BR-021"
+      ],
+      "status": "done"
+    },
+    "lsp-flag-bond": {
+      "label": "Flag Under-bond",
+      "icon": "Flag",
+      "actor": "lsp",
+      "refs": [
+        "lsp:r7",
+        "BR-002",
+        "OQ-008"
+      ],
+      "status": "not-built"
+    },
+    "lsp-req-docs": {
+      "label": "Request Missing Docs",
+      "icon": "FileQuestion",
+      "actor": "lsp",
+      "refs": [
+        "lsp:r5",
+        "BR-011"
+      ],
+      "status": "not-built"
+    },
+    "p4tc-magic": {
+      "label": "Magic Link + OTP",
+      "icon": "Link2",
+      "actor": "p4tc",
+      "refs": [
+        "p4tc:r1",
+        "OQ-004",
+        "C-005"
+      ],
+      "status": "done"
+    },
+    "p4tc-view": {
+      "label": "View Delegated HBLs",
+      "icon": "Eye",
+      "actor": "p4tc",
+      "refs": [
+        "p4tc:r2",
+        "OQ-005"
+      ],
+      "status": "done"
+    },
+    "p4tc-delegate": {
+      "label": "Delegate Further",
+      "icon": "Forward",
+      "actor": "p4tc",
+      "refs": [
+        "p4tc:r3",
+        "BR-013"
+      ],
+      "status": "done"
+    },
+    "p4tc-book": {
+      "label": "Book Pickup",
+      "icon": "CalendarCheck",
+      "actor": "p4tc",
+      "refs": [
+        "p4tc:r4",
+        "p4tc-books-pickup",
+        "C-005"
+      ],
+      "status": "done"
+    },
+    "p4tc-upload": {
+      "label": "Upload DO / Contact ACFS",
+      "icon": "Upload",
+      "actor": "p4tc",
+      "refs": [
+        "p4tc:r5"
+      ],
+      "status": "done"
+    },
+    "acfs-login": {
+      "label": "SSO Login",
+      "icon": "KeyRound",
+      "actor": "acfs",
+      "refs": [
+        "OQ-033"
+      ],
+      "status": "not-built"
+    },
+    "acfs-slots": {
+      "label": "Slot Configuration",
+      "icon": "Settings",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r3",
+        "acfs-configures-slots",
+        "BR-005",
+        "BR-026",
+        "C-002"
+      ],
+      "status": "done"
+    },
+    "acfs-bookings": {
+      "label": "Manage Bookings",
+      "icon": "Search",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r4",
+        "BR-015"
+      ],
+      "status": "done"
+    },
+    "acfs-do-val": {
+      "label": "DO Validation",
+      "icon": "FileCheck",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r5",
+        "acfs-validates-dos",
+        "BR-018"
+      ],
+      "status": "done"
+    },
+    "acfs-pickup": {
+      "label": "Pickup Verification",
+      "icon": "ClipboardCheck",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r6",
+        "acfs-verifies-pickup"
+      ],
+      "status": "not-built"
+    },
+    "acfs-users": {
+      "label": "User Management",
+      "icon": "UserPlus",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r7",
+        "acfs-creates-user",
+        "BR-014",
+        "BR-024",
+        "BR-025"
+      ],
+      "status": "done"
+    },
+    "acfs-hbl-assign": {
+      "label": "Manual HBL Assignment",
+      "icon": "Layers",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r1",
+        "acfs-assigns-hbls"
+      ],
+      "status": "done"
+    },
+    "acfs-ecst": {
+      "label": "ECST Assignment",
+      "icon": "Users",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r2",
+        "OQ-031"
+      ],
+      "status": "not-built"
+    },
+    "acfs-override-do": {
+      "label": "Override DO Req",
+      "icon": "ShieldCheck",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r8",
+        "OQ-010"
+      ],
+      "status": "not-built"
+    },
+    "acfs-foc": {
+      "label": "FOC Rebooking",
+      "icon": "RotateCcw",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r9",
+        "BR-006"
+      ],
+      "status": "done"
+    },
+    "acfs-partial": {
+      "label": "Partial Processing",
+      "icon": "SplitSquareHorizontal",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r11",
+        "BR-007"
+      ],
+      "status": "not-built"
+    },
+    "acfs-edit-hbl": {
+      "label": "Edit HBL Details",
+      "icon": "Pencil",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r12"
+      ],
+      "status": "done"
+    },
+    "acfs-edit-deleg": {
+      "label": "Edit / Revoke Delegation",
+      "icon": "Ban",
+      "actor": "acfs",
+      "refs": [
+        "acfs:r13"
+      ],
+      "status": "not-built"
+    },
+    "acfs-cancel": {
+      "label": "Cancel Any Booking",
+      "icon": "XCircle",
+      "actor": "acfs",
+      "refs": [
+        "acfs-cancels-booking",
+        "BR-022",
+        "C-003"
+      ],
+      "status": "done"
+    },
+    "gh-login": {
+      "label": "SSO Login",
+      "icon": "KeyRound",
+      "actor": "gatehouse",
+      "refs": [
+        "OQ-033"
+      ],
+      "status": "not-built"
+    },
+    "gh-verify": {
+      "label": "Verify Arrival",
+      "icon": "ScanLine",
+      "actor": "gatehouse",
+      "refs": [
+        "gatehouse:r1"
+      ],
+      "status": "done"
+    },
+    "gh-exit": {
+      "label": "Confirm Exit",
+      "icon": "DoorOpen",
+      "actor": "gatehouse",
+      "refs": [
+        "gatehouse:r2"
+      ],
+      "status": "done"
+    },
+    "sh-bookings": {
+      "label": "Bookings List",
+      "icon": "ListOrdered",
+      "actor": "shared",
+      "refs": [],
+      "status": "done"
+    },
+    "sh-notifs": {
+      "label": "Notifications",
+      "icon": "Bell",
+      "actor": "shared",
+      "refs": [
+        "BR-012",
+        "BR-020"
+      ],
+      "status": "not-built"
+    },
+    "sh-payment": {
+      "label": "Payment Flow",
+      "icon": "CreditCard",
+      "actor": "shared",
+      "refs": [
+        "OQ-035",
+        "BR-019",
+        "C-003"
+      ],
+      "status": "not-built"
+    }
+  },
+  "_edges": {
+    "e-lsp-1": {
+      "source": "lsp-login",
+      "target": "lsp-dashboard"
+    },
+    "e-lsp-2a": {
+      "source": "lsp-dashboard",
+      "target": "lsp-delegate"
+    },
+    "e-lsp-2b": {
+      "source": "lsp-dashboard",
+      "target": "lsp-book"
+    },
+    "e-lsp-2c": {
+      "source": "lsp-dashboard",
+      "target": "lsp-view-edit"
+    },
+    "e-lsp-3a": {
+      "source": "lsp-view-edit",
+      "target": "lsp-cancel"
+    },
+    "e-lsp-3b": {
+      "source": "lsp-book",
+      "target": "lsp-upload-do"
+    },
+    "e-lsp-3c": {
+      "source": "lsp-book",
+      "target": "lsp-flag-bond"
+    },
+    "e-lsp-4": {
+      "source": "lsp-upload-do",
+      "target": "lsp-req-docs"
+    },
+    "e-p4tc-1": {
+      "source": "p4tc-magic",
+      "target": "p4tc-view"
+    },
+    "e-p4tc-2a": {
+      "source": "p4tc-view",
+      "target": "p4tc-delegate"
+    },
+    "e-p4tc-2b": {
+      "source": "p4tc-view",
+      "target": "p4tc-book"
+    },
+    "e-p4tc-3": {
+      "source": "p4tc-book",
+      "target": "p4tc-upload"
+    },
+    "e-acfs-1a": {
+      "source": "acfs-login",
+      "target": "acfs-slots"
+    },
+    "e-acfs-1b": {
+      "source": "acfs-login",
+      "target": "acfs-bookings"
+    },
+    "e-acfs-1c": {
+      "source": "acfs-login",
+      "target": "acfs-do-val"
+    },
+    "e-acfs-1d": {
+      "source": "acfs-login",
+      "target": "acfs-pickup"
+    },
+    "e-acfs-2a": {
+      "source": "acfs-bookings",
+      "target": "acfs-users"
+    },
+    "e-acfs-2b": {
+      "source": "acfs-bookings",
+      "target": "acfs-hbl-assign"
+    },
+    "e-acfs-2c": {
+      "source": "acfs-bookings",
+      "target": "acfs-ecst"
+    },
+    "e-acfs-3a": {
+      "source": "acfs-users",
+      "target": "acfs-override-do"
+    },
+    "e-acfs-3b": {
+      "source": "acfs-users",
+      "target": "acfs-foc"
+    },
+    "e-acfs-3c": {
+      "source": "acfs-ecst",
+      "target": "acfs-partial"
+    },
+    "e-acfs-3d": {
+      "source": "acfs-pickup",
+      "target": "acfs-edit-hbl"
+    },
+    "e-acfs-4a": {
+      "source": "acfs-override-do",
+      "target": "acfs-edit-deleg"
+    },
+    "e-acfs-4b": {
+      "source": "acfs-foc",
+      "target": "acfs-cancel"
+    },
+    "e-gh-1": {
+      "source": "gh-login",
+      "target": "gh-verify"
+    },
+    "e-gh-2": {
+      "source": "gh-verify",
+      "target": "gh-exit"
+    },
+    "e-cross-1": {
+      "source": "lsp-delegate",
+      "target": "p4tc-magic",
+      "label": "Sends magic link",
+      "cross": true,
+      "sourceHandle": "bottom",
+      "targetHandle": "top"
+    },
+    "e-cross-2": {
+      "source": "p4tc-delegate",
+      "target": "p4tc-magic",
+      "label": "Chain delegation",
+      "cross": true,
+      "sourceHandle": "bottom",
+      "targetHandle": "top"
+    },
+    "e-cross-3": {
+      "source": "lsp-book",
+      "target": "sh-payment",
+      "sourceHandle": "bottom",
+      "targetHandle": "top"
+    },
+    "e-cross-5": {
+      "source": "acfs-pickup",
+      "target": "gh-verify",
+      "label": "Booking \u2192 processed",
+      "cross": true,
+      "sourceHandle": "bottom",
+      "targetHandle": "top"
+    },
+    "e-lsp-5a": {
+      "source": "lsp-dashboard",
+      "target": "sh-bookings",
+      "sourceHandle": "bottom",
+      "targetHandle": "top"
+    },
+    "e-lsp-5b": {
+      "source": "lsp-dashboard",
+      "target": "sh-notifs",
+      "sourceHandle": "bottom",
+      "targetHandle": "top"
+    }
+  },
+  "_lanes": {
+    "lsp": {
+      "y": 20,
+      "height": 320,
+      "color": "#0081F2",
+      "label": "LSP"
+    },
+    "p4tc": {
+      "y": 380,
+      "height": 200,
+      "color": "#7C3AED",
+      "label": "P4TC"
+    },
+    "acfs": {
+      "y": 660,
+      "height": 340,
+      "color": "#002C61",
+      "label": "ACFS Internal"
+    },
+    "gatehouse": {
+      "y": 1060,
+      "height": 140,
+      "color": "#D97706",
+      "label": "Gatehouse"
+    }
+  },
+  "lsp-login": {
+    "x": -19,
+    "y": 93
+  },
+  "lsp-dashboard": {
+    "x": 232,
+    "y": 93
+  },
+  "lsp-delegate": {
+    "x": 501,
+    "y": 17
+  },
+  "lsp-book": {
+    "x": 500,
+    "y": 80
+  },
+  "lsp-view-edit": {
+    "x": 493,
+    "y": 205
+  },
+  "lsp-cancel": {
+    "x": 793,
+    "y": 286
+  },
+  "lsp-upload-do": {
+    "x": 788,
+    "y": 84
+  },
+  "lsp-flag-bond": {
+    "x": 793,
+    "y": 159
+  },
+  "lsp-req-docs": {
+    "x": 977,
+    "y": 84
+  },
+  "p4tc-magic": {
+    "x": -27,
+    "y": 473
+  },
+  "p4tc-view": {
+    "x": 270,
+    "y": 469
+  },
+  "p4tc-delegate": {
+    "x": 539,
+    "y": 385
+  },
+  "p4tc-book": {
+    "x": 723,
+    "y": 465
+  },
+  "p4tc-upload": {
+    "x": 955,
+    "y": 465
+  },
+  "acfs-login": {
+    "x": -27,
+    "y": 799
+  },
+  "acfs-slots": {
+    "x": 249,
+    "y": 679
+  },
+  "acfs-bookings": {
+    "x": 249,
+    "y": 739
+  },
+  "acfs-do-val": {
+    "x": 249,
+    "y": 802
+  },
+  "acfs-pickup": {
+    "x": 243,
+    "y": 875
+  },
+  "acfs-users": {
+    "x": 500,
+    "y": 660
+  },
+  "acfs-hbl-assign": {
+    "x": 507,
+    "y": 766
+  },
+  "acfs-ecst": {
+    "x": 516,
+    "y": 850
+  },
+  "acfs-override-do": {
+    "x": 765,
+    "y": 660
+  },
+  "acfs-foc": {
+    "x": 783,
+    "y": 753
+  },
+  "acfs-partial": {
+    "x": 723,
+    "y": 848
+  },
+  "acfs-edit-hbl": {
+    "x": 729,
+    "y": 925
+  },
+  "acfs-edit-deleg": {
+    "x": 974,
+    "y": 661
+  },
+  "acfs-cancel": {
+    "x": 1001,
+    "y": 751
+  },
+  "gh-login": {
+    "x": -27,
+    "y": 1101
+  },
+  "gh-verify": {
+    "x": 283,
+    "y": 1100
+  },
+  "gh-exit": {
+    "x": 499,
+    "y": 1100
+  },
+  "sh-bookings": {
+    "x": 100,
+    "y": 217
+  },
+  "sh-notifs": {
+    "x": -69,
+    "y": 219
+  },
+  "sh-payment": {
+    "x": 502,
+    "y": 274
+  }
+}

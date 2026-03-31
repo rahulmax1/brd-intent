@@ -1,0 +1,22 @@
+# Build output
+.next/
+
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
+# Playwright MCP screenshots
+.playwright-mcp/
+
+# Screenshot artifacts in root
+*.png
+
+# PDFs (binary, not useful for context)
+docs/archive/*.pdf
+docs/project/*.pdf
+
+# Font files
+public/fonts/*.ttf

@@ -1,0 +1,620 @@
+// ⚠️ SUPERSEDED - This schema has been superseded by acfs-production-schema.dbml
+// See ../archive/README.md for details
+//
+// ACFS VBS Portal - Corrected Data Model
+// Generated from Intent Model v0.8.0
+// Archived: 2026-03-26
+// Fixes critical gaps identified in original schema
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+Enum company_type {
+  wholesale_freight_forwarder
+  freight_forwarder
+  transport_carrier
+  customer
+  clearing_agent
+}
+
+Enum user_role {
+  acfs_admin
+  acfs_user
+  lsp
+}
+
+Enum au_state {
+  NSW
+  VIC
+  QLD
+  SA
+  WA
+  TAS
+  NT
+  ACT
+}
+
+Enum slot_day_of_week {
+  monday
+  tuesday
+  wednesday
+  thursday
+  friday
+  saturday
+  sunday
+}
+
+Enum container_status {
+  received
+  unpacking
+  unpacked
+}
+
+// CORRECTED: Matches intent model milestone progression
+Enum milestone_status {
+  on_vessel
+  at_wharf
+  in_yard
+  unpacked
+  collected
+}
+
+// NEW: Separate dimension for delegation/booking state (BR-027)
+Enum hbl_status {
+  unassigned
+  assigned
+  delegated
+  booked
+}
+
+Enum customs_status {
+  pending
+  partial_clearance
+  fully_cleared
+  held
+}
+
+Enum release_type {
+  do_required
+  free_release
+}
+
+Enum do_validation_status {
+  not_provided
+  uploaded
+  pending_validation
+  validated
+  flagged
+  not_required
+}
+
+// CORRECTED: Matches intent model lifecycle
+Enum booking_status {
+  draft
+  booked
+  pending_processing
+  processed
+  collected
+  cancelled
+}
+
+Enum payment_status {
+  pending
+  completed
+  failed
+  refunded
+}
+
+Enum delegation_method {
+  existing_lsp
+  one_off_p4tc
+}
+
+Enum delegation_status {
+  active
+  revoked
+}
+
+Enum notification_type {
+  do_invalid
+  booking_confirmation
+  booking_cancellation
+  booking_modified
+  user_invitation
+  hbl_assignment
+  user_removal
+  delegation_notification
+}
+
+Enum notification_status {
+  pending
+  sent
+  failed
+}
+
+// ============================================================================
+// TABLES
+// ============================================================================
+
+Table companies {
+  id int [pk, increment]
+  company_name varchar(255) [not null]
+  company_type company_type [not null]
+  company_id varchar(100) [note: 'External company identifier']
+  branch_code varchar(50)
+  abn char(11)
+  email varchar(255) [not null]
+  state au_state
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    (company_id, branch_code)
+    email
+  }
+}
+
+Table users {
+  id int [pk, increment]
+  company_id int [ref: > companies.id]
+  first_name varchar(100)
+  last_name varchar(100)
+  email varchar(255) [not null, unique]
+  role user_role [not null]
+  okta_id varchar(255) [note: 'For ACFS SSO users']
+  password_hash varchar(255) [note: 'For LSP users']
+  is_active boolean [default: true]
+  archived_at timestamp [note: 'Soft delete - retains data']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    email
+    company_id
+    okta_id
+  }
+}
+
+Table user_invitations {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  token varchar(512) [not null, unique]
+  sent_at timestamp [default: `now()`]
+  expires_at timestamp [not null, note: '72 hours from sent_at']
+  used_at timestamp
+
+  indexes {
+    token
+    user_id
+  }
+}
+
+Table sites {
+  id int [pk, increment]
+  site_name varchar(255) [not null]
+  branch_code varchar(50) [note: 'Multiple sites can share branch code']
+  address_line1 varchar(255)
+  address_line2 varchar(255)
+  suburb varchar(100)
+  state au_state
+  postcode char(4)
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    branch_code
+  }
+}
+
+// CORRECTED: Slot cutoff structure to support relative day + time (BR-005)
+Table slots {
+  id int [pk, increment]
+  site_id int [ref: > sites.id, not null]
+  slot_name varchar(255)
+  day_of_week slot_day_of_week [not null]
+  start_time time [not null]
+  end_time time [not null]
+
+  // CORRECTED: Structured cutoff instead of simple hours
+  booking_cutoff_relative_day varchar(50) [not null, note: 'e.g., previous_working_day, same_day, two_days_prior']
+  booking_cutoff_time time [not null, note: 'e.g., 16:00']
+  change_cutoff_relative_day varchar(50) [not null]
+  change_cutoff_time time [not null]
+
+  heat_map_threshold int [note: 'Optional Phase 1 - for density indicator']
+  is_blocked boolean [default: false, note: 'Holiday/blackout dates']
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    site_id
+    (day_of_week, start_time)
+  }
+}
+
+Table containers {
+  id int [pk, increment]
+  container_number varchar(50) [not null, unique]
+  ocean_bl varchar(100) [note: 'NEW: Multiple containers may share one ocean BL']
+  site_id int [ref: > sites.id]
+  status container_status [default: 'received']
+  received_at timestamp
+  unpacked_at timestamp
+  maximus_reference varchar(255) [note: 'External system reference']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    container_number
+    ocean_bl
+    site_id
+  }
+}
+
+// CORRECTED: Added all missing fields from intent model
+Table hbls {
+  id int [pk, increment]
+  container_id int [ref: > containers.id]
+
+  // Primary identifiers
+  hbl_number varchar(100) [not null, unique, note: 'Primary identifier - lowest-level HBL']
+  alt_hbl_reference varchar(100) [note: 'Parent/master HBL reference from AGS']
+  import_ref varchar(100)
+
+  // Physical attributes
+  description text
+  weight_kg decimal(10,3)
+  volume_m3 decimal(10,3)
+  chargeable_weight decimal(10,3) [note: 'Computed: max(weight_kg, volume_m3)']
+  quantity int
+  pack_type varchar(100)
+
+  // NEW: Two orthogonal dimensions (BR-027)
+  milestone milestone_status [not null, default: 'on_vessel']
+  hbl_status hbl_status [not null, default: 'unassigned']
+
+  // Customs and clearance
+  customs_status customs_status [default: 'pending']
+  customs_clearance_date date
+
+  // NEW: Under-bond fields (BR-002)
+  under_bond boolean [default: false, note: 'Manual flag set by LSP/ACFS']
+  under_bond_verified boolean [default: false, note: 'ACFS verification']
+
+  // Release and storage
+  release_type release_type [default: 'do_required']
+  do_waived boolean [note: 'Derived: true when release_type = free_release OR under_bond = true']
+  last_free_storage_date date [note: 'After this date, storage fees apply']
+  storage_fee_applicable boolean [note: 'Computed from last_free_storage_date']
+
+  // NEW: Critical for dispatch planning (BR-031)
+  pickup_site_id int [ref: > sites.id, note: 'Which warehouse to send truck to']
+
+  // NEW: Consignee from AGS feed (OQ-034)
+  consignee_name varchar(255) [note: 'Next party in chain - from AGS']
+  consignee_account_code varchar(100) [note: 'From AGS feed']
+
+  // Assignment
+  assigned_company_id int [ref: > companies.id, note: 'LSP allocated to this HBL']
+
+  // Integration references
+  maximus_hbl_id varchar(255) [note: 'External Maximus reference']
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    hbl_number
+    alt_hbl_reference
+    container_id
+    assigned_company_id
+    pickup_site_id
+    (milestone, hbl_status)
+    consignee_account_code
+  }
+}
+
+// Tracks full delegation chain (hop-by-hop)
+Table hbl_custody_chain {
+  id int [pk, increment]
+  hbl_id int [ref: > hbls.id, not null]
+  from_company_id int [ref: > companies.id, note: 'Delegator (null for initial ACFS assignment)']
+  to_company_id int [ref: > companies.id, not null, note: 'Delegatee']
+  hop_sequence int [not null, note: 'Order in delegation chain']
+  assigned_at timestamp [default: `now()`]
+  delegation_method delegation_method [note: 'existing_lsp or one_off_p4tc']
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    hbl_id
+    (hbl_id, hop_sequence)
+    from_company_id
+    to_company_id
+  }
+}
+
+// NEW: Delegation entity for tracking and management (Intent model entity)
+Table delegations {
+  id int [pk, increment]
+  delegator_company_id int [ref: > companies.id, not null]
+  delegatee_company_id int [ref: > companies.id, note: 'NULL for P4TC delegations']
+  delegatee_email varchar(255) [note: 'For P4TC delegations']
+  delegation_method delegation_method [not null]
+  status delegation_status [default: 'active']
+  created_at timestamp [default: `now()`]
+  revoked_at timestamp
+  revoked_by_user_id int [ref: > users.id, note: 'ACFS user who revoked']
+
+  indexes {
+    delegator_company_id
+    delegatee_company_id
+    status
+  }
+}
+
+Table delegation_hbls {
+  delegation_id int [ref: > delegations.id]
+  hbl_id int [ref: > hbls.id]
+
+  indexes {
+    (delegation_id, hbl_id) [pk]
+  }
+}
+
+// One-to-many: each HBL can have multiple DOs (one per tier)
+Table delivery_orders {
+  id int [pk, increment]
+  hbl_id int [ref: > hbls.id, not null]
+  custody_chain_id int [ref: > hbl_custody_chain.id, note: 'Which tier/hop this DO covers']
+
+  issued_by_company_id int [ref: > companies.id, not null]
+  issued_to_company_id int [ref: > companies.id, not null]
+
+  do_number varchar(100)
+  document_url text [note: 'Stored document reference']
+  tier_level int [note: 'Which level in HBL hierarchy']
+
+  validation_status do_validation_status [default: 'not_provided']
+  validated_by_user_id int [ref: > users.id]
+  validated_at timestamp
+  invalidation_reason text [note: 'If status = flagged']
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    hbl_id
+    (hbl_id, tier_level)
+    validation_status
+    issued_to_company_id
+  }
+}
+
+Table bookings {
+  id int [pk, increment]
+  booking_reference varchar(50) [not null, unique, note: 'System-generated']
+
+  // Slot details
+  slot_id int [ref: > slots.id, not null]
+  slot_date date [not null]
+
+  // Booking party
+  booked_by_company_id int [ref: > companies.id, not null]
+  booked_by_user_id int [ref: > users.id, note: 'NULL for P4TC']
+  booked_by_email varchar(255) [note: 'For P4TC bookings']
+
+  // Status
+  status booking_status [default: 'draft']
+
+  // Driver and vehicle
+  driver_name varchar(255) [not null]
+  driver_licence_number varchar(50) [not null]
+  driver_phone varchar(20)
+  truck_rego varchar(20) [not null]
+  truck_details text
+
+  // Site induction and T&Cs
+  site_induction_completed boolean [default: false]
+  site_induction_skipped boolean [default: false, note: 'If driver already inducted']
+  terms_accepted_at timestamp
+
+  // Fees
+  total_fee_excl_gst decimal(10,2) [not null]
+  gst_amount decimal(10,2) [not null]
+  total_fee_incl_gst decimal(10,2) [not null]
+
+  // Modifications
+  is_late_change boolean [default: false]
+  late_change_fee decimal(10,2) [default: 0]
+  last_modified_at timestamp
+  last_modified_by_user_id int [ref: > users.id]
+
+  // Administrative
+  notes text
+  cancelled_at timestamp
+  cancelled_by_user_id int [ref: > users.id]
+  cancellation_reason text
+  processed_at timestamp
+  processed_by_user_id int [ref: > users.id]
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    booking_reference
+    slot_id
+    slot_date
+    booked_by_company_id
+    status
+    truck_rego
+    driver_licence_number
+  }
+}
+
+// Junction table with per-HBL fee breakdown (BR-019)
+Table booking_hbls {
+  id int [pk, increment]
+  booking_id int [ref: > bookings.id, not null]
+  hbl_id int [ref: > hbls.id, not null]
+
+  // Fee calculation snapshot at booking time
+  chargeable_weight decimal(10,3) [not null]
+  rate decimal(10,4) [not null]
+  per_hbl_fee decimal(10,2) [not null, note: 'chargeable_weight × rate']
+
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    booking_id
+    hbl_id
+    (booking_id, hbl_id) [unique]
+  }
+}
+
+Table payments {
+  id int [pk, increment]
+  booking_id int [ref: > bookings.id, not null]
+
+  amount_excl_gst decimal(10,2) [not null]
+  gst_amount decimal(10,2) [not null]
+  total_amount decimal(10,2) [not null]
+
+  payment_gateway varchar(50) [note: 'stripe, compay - abstracted for swap']
+  payment_gateway_ref varchar(255) [note: 'External gateway reference']
+  transaction_reference varchar(255)
+
+  status payment_status [default: 'pending']
+  payment_timestamp timestamp
+  processed_at timestamp
+
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    booking_id
+    payment_gateway_ref
+    status
+  }
+}
+
+// Pricing configuration (per site/zone)
+Table pricing_zones {
+  id int [pk, increment]
+  site_id int [ref: > sites.id, not null]
+  zone_name varchar(100)
+
+  rate_per_kg decimal(10,4) [not null, note: 'Single flat rate for Phase 1']
+  minimum_charge decimal(10,2) [not null]
+  gst_rate decimal(5,4) [default: 0.10, note: '10% GST']
+
+  effective_from date [not null]
+  effective_to date [note: 'NULL = current']
+  is_active boolean [default: true]
+
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    site_id
+    (site_id, effective_from, effective_to)
+  }
+}
+
+// NEW: Driver records for LSP accounts (deferred but included for completeness)
+Table driver_records {
+  id int [pk, increment]
+  company_id int [ref: > companies.id, not null, note: 'Scoped per LSP account (BR-016)']
+
+  driver_name varchar(255) [not null]
+  driver_licence_number varchar(50) [not null]
+  driver_phone varchar(20)
+  default_truck_rego varchar(20)
+
+  site_induction_completed boolean [default: false]
+  site_induction_date date
+
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+
+  indexes {
+    company_id
+    (company_id, driver_licence_number) [unique]
+  }
+}
+
+Table email_notifications {
+  id int [pk, increment]
+
+  recipient_email varchar(255) [not null]
+  recipient_user_id int [ref: > users.id, note: 'NULL for P4TC']
+  recipient_company_id int [ref: > companies.id]
+
+  notification_type notification_type [not null]
+  related_entity_type varchar(50) [note: 'booking, hbl, delegation, user']
+  related_entity_id int [note: 'ID of the related entity']
+
+  subject varchar(500)
+  body text
+  secure_link_token varchar(512) [note: 'For P4TC magic links']
+  otp_code varchar(10) [note: 'For P4TC verification']
+
+  sent_at timestamp
+  status notification_status [default: 'pending']
+  error_message text
+
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    recipient_email
+    recipient_user_id
+    status
+    notification_type
+    (related_entity_type, related_entity_id)
+  }
+}
+
+// ============================================================================
+// NOTES
+// ============================================================================
+
+Note: '''
+# Key Corrections from Original Schema
+
+1. **HBL Status Dimension (BR-027)**: Added separate `hbl_status` enum and field to track delegation/booking state independently from physical milestone.
+
+2. **Milestone Enum**: Changed from (pending, unpacked, customs_cleared, ready_for_pickup, picked_up, delivered) to match intent model (on_vessel, at_wharf, in_yard, unpacked, collected).
+
+3. **Under-Bond Fields (BR-002)**: Added `under_bond`, `under_bond_verified`, and `do_waived` to HBLs table.
+
+4. **Pickup Site (BR-031)**: Added `pickup_site_id` to HBLs - critical for dispatch planning.
+
+5. **Slot Cutoffs (BR-005)**: Changed from simple `booking_cutoff_hours` to structured `booking_cutoff_relative_day` + `booking_cutoff_time` to support "previous working day at 4PM" type rules.
+
+6. **Booking Status**: Changed lifecycle to match intent model (draft → booked → pending_processing → processed → collected → cancelled).
+
+7. **Missing Fields**: Added `ocean_bl` to containers, `consignee_name`/`consignee_account_code` to HBLs, `last_free_storage_date` instead of just `free_days`.
+
+8. **Delegation Entity**: Added separate `delegations` table to track delegation records explicitly per intent model.
+
+9. **Release Type**: Added `release_type` enum and field to support free_release vs do_required per tier.
+
+10. **Driver Records**: Added `driver_records` table scoped per company (BR-016).
+
+## Data Sources (Integration)
+- **Maximus**: Lowest-level HBL data, weight, volume, customs status, milestones
+- **AGS Feed**: HBL hierarchy, master HBL refs, consignee data (OQ-034 BLOCKER)
+- **Payment Gateway**: Stripe initially, abstracted for future swap to Compay
+
+## Critical Business Rules Encoded
+- BR-001: Delegation at any milestone, booking requires "unpacked" + customs cleared
+- BR-002: DO per tier, waived by under_bond or free_release
+- BR-004: Either delegate OR book per HBL, never both
+- BR-005: Slot cutoffs are relative day + time, no hard capacity limits
+- BR-027: Two orthogonal HBL dimensions (milestone + hbl_status)
+- BR-031: Pickup site visible and filterable in HBL views
+- BR-032: Both HBL ref and booking ref are primary identifiers once booked
+'''

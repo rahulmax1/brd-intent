@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.superpowers/
+.vercel
+.env*.local
+model-history.json
+.playwright-mcp/
+docs/uploads/
+docs/generated/
+.claude/settings.local.json
