@@ -6,7 +6,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    /* VBS Design Tokens */
+    /* Adapt Canvas Design Tokens */
     --bg-page: #F8F8F7;
     --bg-nav: #EBEBEB;
     --bg-white: #FFFFFF;

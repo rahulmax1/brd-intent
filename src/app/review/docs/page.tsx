@@ -260,7 +260,7 @@ function DocsPageInner() {
                 Documentation Search
               </h2>
               <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-                Ask GreaseMonkey questions about VBS Intent documentation
+                Ask GreaseMonkey questions about Adapt Canvas documentation
               </p>
               <DocsSearch />
             </div>
