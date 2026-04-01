@@ -17,6 +17,10 @@ import {
   TableProperties,
   GitCompare,
   ArrowRight,
+  FileCheck,
+  Sparkles,
+  ExternalLink,
+  Layers,
 } from 'lucide-react'
 
 type Card = {
@@ -25,11 +29,26 @@ type Card = {
   href: string
   icon: typeof Users
   items?: string[]
+  external?: boolean
 }
 
 const cardGroups = [
   {
-    title: 'Model',
+    title: 'BRD & Discussions',
+    description: 'Source requirements and context',
+    cards: [
+      {
+        title: 'Current BRD',
+        description: 'Original business requirements document (PDF)',
+        href: '/documents?doc=current-brd',
+        icon: FileText,
+        items: ['Source requirements', 'PDF viewer', 'Reference document'],
+      },
+    ],
+  },
+  {
+    title: 'Intent Model & Views',
+    description: 'Structured understanding of requirements',
     cards: [
       {
         title: 'Consensus Dashboard',
@@ -40,69 +59,80 @@ const cardGroups = [
       },
       {
         title: 'Model Sections',
-        description: 'Deep dive into actors, entities, journeys, rules, and constraints',
+        description: 'Actors, entities, journeys, rules, constraints, and questions',
         href: '/actors',
         icon: Users,
-        items: ['5 Actors', '10 Entities', '14 Journeys', '21 Business Rules', '5 Constraints', '1 Open Question'],
+        items: ['Actors', 'Entities', 'Journeys', 'Business Rules', 'Constraints', 'Open Questions'],
+      },
+      {
+        title: '3D Explorer',
+        description: 'Interactive visualizations of the intent model',
+        href: '/explorer',
+        icon: Network,
+        items: ['Force graph', 'Lifecycle view', 'Actor layers'],
+      },
+      {
+        title: 'Version History & Diff',
+        description: 'Track changes and compare versions',
+        href: '/versions',
+        icon: GitCompare,
+        items: ['Side-by-side diffs', 'Version timeline', 'Rollback capability'],
       },
     ],
   },
   {
-    title: 'Docs',
+    title: 'Derived Artefacts',
+    description: 'Generated outputs from the intent model',
     cards: [
       {
-        title: 'Business Requirements',
-        description: 'Complete BRD generated from the intent model',
+        title: 'Generated BRD',
+        description: 'Auto-generated business requirements document',
         href: '/brd',
         icon: ClipboardList,
-        items: ['Export to PDF', 'Version-controlled', 'Auto-generated'],
+        items: ['Auto-generated', 'Version-controlled', 'Export to markdown'],
       },
       {
-        title: 'API Specification',
+        title: 'Simple Version',
+        description: 'ELI-5 summary of the project',
+        href: '/simple',
+        icon: Sparkles,
+        items: ['Human-readable', 'Plain language', 'Quick overview'],
+      },
+      {
+        title: 'Information Architecture',
+        description: 'Implementation architecture mapping',
+        href: '/architecture',
+        icon: Map,
+        items: ['Responsibility → screen mapping', 'Implementation tracking', 'Coverage analysis'],
+      },
+      {
+        title: 'DB Schema',
+        description: 'Database schema and entity relationships',
+        href: '/data-model',
+        icon: TableProperties,
+        items: ['Entity-relationship diagram', 'Table definitions', 'Foreign keys'],
+      },
+      {
+        title: 'API Specs',
         description: 'Technical API endpoints and integration details',
         href: '/api-spec',
         icon: Code,
         items: ['Endpoint documentation', 'Request/response schemas', 'Authentication flows'],
       },
       {
-        title: 'Project Documents',
-        description: 'Upload, search, and reference supporting documentation',
-        href: '/documents',
-        icon: FileText,
-        items: ['AI-powered search', 'File uploads', 'Cross-reference with model'],
-      },
-    ],
-  },
-  {
-    title: 'Technical',
-    cards: [
-      {
-        title: 'Model Explorer',
-        description: 'Interactive 3D and graph visualizations of the intent model',
-        href: '/explorer',
-        icon: Network,
-        items: ['Force-directed graph', '2D layout editor', 'Model structure view'],
+        title: 'Screens List',
+        description: 'UI screens needed for implementation',
+        href: '/screens',
+        icon: Layers,
+        items: ['Generated from journeys', 'Screen inventory', 'Implementation checklist'],
       },
       {
-        title: 'Implementation Map',
-        description: 'Connect model responsibilities to frontend screens',
-        href: '/architecture',
-        icon: Map,
-        items: ['Responsibility → screen mapping', 'Implementation tracking', 'Coverage analysis'],
-      },
-      {
-        title: 'Data Model',
-        description: 'Database schema and entity relationships',
-        href: '/data-model',
-        icon: TableProperties,
-        items: ['Entity-relationship diagram', 'Table definitions', 'Foreign key relationships'],
-      },
-      {
-        title: 'Version History',
-        description: 'Compare model versions and track changes over time',
-        href: '/versions',
-        icon: GitCompare,
-        items: ['Side-by-side diffs', 'Version timeline', 'Rollback capability'],
+        title: 'Components Repository',
+        description: 'Frontend components library and showcase',
+        href: '#',
+        icon: FileCheck,
+        items: ['External repo', 'Component library', '/dev showcase'],
+        external: true,
       },
     ],
   },
@@ -234,16 +264,23 @@ export function HomeCards() {
       <div className="space-y-12">
         {cardGroups.map(group => (
           <div key={group.title}>
-            <h2 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
-              {group.title}
-            </h2>
+            <div className="mb-4">
+              <h2 className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+                {group.title}
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {group.description}
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {group.cards.map(card => {
                 const Icon = card.icon
+                const CardWrapper = card.external ? 'a' : Link
                 return (
-                  <Link
+                  <CardWrapper
                     key={card.href}
                     href={card.href}
+                    {...(card.external && { target: '_blank', rel: 'noopener noreferrer' })}
                     className="group block rounded-lg transition-all duration-200"
                     style={{
                       background: 'var(--bg-white)',
@@ -262,11 +299,19 @@ export function HomeCards() {
                         >
                           <Icon size={20} />
                         </div>
-                        <ArrowRight
-                          size={18}
-                          className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                          style={{ color: 'var(--accent-blue)' }}
-                        />
+                        {card.external ? (
+                          <ExternalLink
+                            size={18}
+                            className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                            style={{ color: 'var(--accent-blue)' }}
+                          />
+                        ) : (
+                          <ArrowRight
+                            size={18}
+                            className="opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                            style={{ color: 'var(--accent-blue)' }}
+                          />
+                        )}
                       </div>
                       <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
                         {card.title}
@@ -285,7 +330,7 @@ export function HomeCards() {
                         </ul>
                       )}
                     </div>
-                  </Link>
+                  </CardWrapper>
                 )
               })}
             </div>
