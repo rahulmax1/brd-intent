@@ -5,6 +5,7 @@ import { NavSidebar } from '@/components/review/nav-links'
 import { ChatPanel } from '@/components/ai/prompt-drawer'
 import { PageLoading } from '@/components/review/page-loading'
 import { ChatPanelWrapper, ModelToolbar, ContentWrapper, ContentCard } from '@/components/review/layout-shell'
+import { ModelTabs } from '@/components/review/model-tabs'
 
 export function ModelLayout({
   children,
@@ -26,6 +27,17 @@ export function ModelLayout({
     pathname === '/data-model'
   )
 
+  // Show model tabs on consensus and model section pages
+  const showModelTabs = (
+    pathname === '/consensus' ||
+    pathname === '/actors' ||
+    pathname === '/entities' ||
+    pathname === '/journeys' ||
+    pathname === '/rules' ||
+    pathname === '/constraints' ||
+    pathname === '/questions'
+  )
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-page)' }}>
       <PageLoading />
@@ -41,6 +53,8 @@ export function ModelLayout({
               </h2>
             </div>
           </ModelToolbar>
+
+          {showModelTabs && <ModelTabs />}
 
           <ContentCard>
             {children}

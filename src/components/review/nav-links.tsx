@@ -63,19 +63,6 @@ const navGroups: NavGroupWithParent[] = [
     label: 'Intent Model',
     items: [
       { label: 'Consensus', href: '/consensus', icon: LayoutDashboard },
-      {
-        label: 'Model Sections',
-        href: '/actors',
-        icon: Users,
-        children: [
-          { label: 'Actors', href: '/actors', icon: Users },
-          { label: 'Entities', href: '/entities', icon: Box },
-          { label: 'Journeys', href: '/journeys', icon: Route },
-          { label: 'Business Rules', href: '/rules', icon: Scale },
-          { label: 'Constraints', href: '/constraints', icon: Lock },
-          { label: 'Open Questions', href: '/questions', icon: HelpCircle },
-        ],
-      },
       { label: '3D Explorer', href: '/explorer', icon: Network },
       { label: 'Version History', href: '/versions', icon: GitCompare },
     ],
