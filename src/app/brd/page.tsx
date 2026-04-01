@@ -499,107 +499,116 @@ export default async function BRDPage() {
             )}
           </section>
 
-          <SectionDivider />
+          {/* 9. Assumptions (only if present) */}
+          {projectRequirements.assumptions.length > 0 && (
+            <>
+              <SectionDivider />
+              <section className="print:break-before-auto">
+                <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--acfs-navy)' }}>
+                  9. Assumptions
+                </h2>
+                {Array.from(assumptionsByCategory.entries()).map(([category, assumptions]) => (
+                  <div key={category} className="mb-8">
+                    <h3 className="text-[17px] font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+                      {category}
+                    </h3>
+                    <div className="space-y-4">
+                      {assumptions.map(a => (
+                        <div key={a.id} className="pl-5" style={{ borderLeft: '2px solid var(--border-default)' }}>
+                          <p className="text-[15px] leading-7" style={{ color: 'var(--text-secondary)' }}>
+                            <strong style={{ color: 'var(--text-primary)' }}>{a.id}:</strong> {a.assumption}
+                          </p>
+                          {a.rationale && (
+                            <p className="mt-1 text-[13px] italic leading-6" style={{ color: 'var(--text-muted)' }}>
+                              Rationale: {a.rationale}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
 
-          {/* 9. Assumptions */}
-          <section className="print:break-before-auto">
-            <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--acfs-navy)' }}>
-              9. Assumptions
-            </h2>
-            {Array.from(assumptionsByCategory.entries()).map(([category, assumptions]) => (
-              <div key={category} className="mb-8">
-                <h3 className="text-[17px] font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-                  {category}
-                </h3>
-                <div className="space-y-4">
-                  {assumptions.map(a => (
-                    <div key={a.id} className="pl-5" style={{ borderLeft: '2px solid var(--border-default)' }}>
-                      <p className="text-[15px] leading-7" style={{ color: 'var(--text-secondary)' }}>
-                        <strong style={{ color: 'var(--text-primary)' }}>{a.id}:</strong> {a.assumption}
+          {/* 10. Dependencies and Ownership (only if present) */}
+          {projectRequirements.dependencies.length > 0 && (
+            <>
+              <SectionDivider />
+              <section className="print:break-before-auto">
+                <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--acfs-navy)' }}>
+                  10. Dependencies and Ownership
+                </h2>
+                <div className="space-y-8">
+                  {projectRequirements.dependencies.map(dep => (
+                    <div key={dep.id} className="rounded-lg p-5" style={{ background: 'var(--bg-card-gray)' }}>
+                      <h3 className="text-[17px] font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+                        {dep.name}
+                      </h3>
+                      <p className="text-[15px] leading-7 mb-3" style={{ color: 'var(--text-secondary)' }}>
+                        <strong>Dependency:</strong> {dep.description}
                       </p>
-                      {a.rationale && (
-                        <p className="mt-1 text-[13px] italic leading-6" style={{ color: 'var(--text-muted)' }}>
-                          Rationale: {a.rationale}
+                      <p className="text-[15px] leading-7 mb-2" style={{ color: 'var(--text-secondary)' }}>
+                        <strong>Owner:</strong> {dep.owner}
+                      </p>
+                      {dep.status && (
+                        <p className="text-[15px] leading-7 mb-2" style={{ color: 'var(--text-secondary)' }}>
+                          <strong>Status:</strong>{' '}
+                          <span className="capitalize">{dep.status}</span>
+                        </p>
+                      )}
+                      {dep.risk && (
+                        <p className="text-[15px] leading-7" style={{ color: 'var(--text-secondary)' }}>
+                          <strong>Risk:</strong>{' '}
+                          <span className={`capitalize ${
+                            dep.risk === 'high' ? 'text-amber-700' :
+                            dep.risk === 'medium' ? 'text-yellow-700' :
+                            'text-green-700'
+                          }`}>
+                            {dep.risk}
+                          </span>
                         </p>
                       )}
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
-          </section>
+              </section>
+            </>
+          )}
 
-          <SectionDivider />
-
-          {/* 10. Dependencies and Ownership */}
-          <section className="print:break-before-auto">
-            <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--acfs-navy)' }}>
-              10. Dependencies and Ownership
-            </h2>
-            <div className="space-y-8">
-              {projectRequirements.dependencies.map(dep => (
-                <div key={dep.id} className="rounded-lg p-5" style={{ background: 'var(--bg-card-gray)' }}>
-                  <h3 className="text-[17px] font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                    {dep.name}
-                  </h3>
-                  <p className="text-[15px] leading-7 mb-3" style={{ color: 'var(--text-secondary)' }}>
-                    <strong>Dependency:</strong> {dep.description}
-                  </p>
-                  <p className="text-[15px] leading-7 mb-2" style={{ color: 'var(--text-secondary)' }}>
-                    <strong>Owner:</strong> {dep.owner}
-                  </p>
-                  {dep.status && (
-                    <p className="text-[15px] leading-7 mb-2" style={{ color: 'var(--text-secondary)' }}>
-                      <strong>Status:</strong>{' '}
-                      <span className="capitalize">{dep.status}</span>
-                    </p>
-                  )}
-                  {dep.risk && (
-                    <p className="text-[15px] leading-7" style={{ color: 'var(--text-secondary)' }}>
-                      <strong>Risk:</strong>{' '}
-                      <span className={`capitalize ${
-                        dep.risk === 'high' ? 'text-amber-700' :
-                        dep.risk === 'medium' ? 'text-yellow-700' :
-                        'text-green-700'
-                      }`}>
-                        {dep.risk}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <SectionDivider />
-
-          {/* 11. High-Level Non-Functional Expectations */}
-          <section className="print:break-before-auto">
-            <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--acfs-navy)' }}>
-              11. High-Level Non-Functional Expectations
-            </h2>
-            {Array.from(nfrsByCategory.entries()).map(([category, nfrs]) => (
-              <div key={category} className="mb-8">
-                <h3 className="text-[17px] font-semibold mb-4 capitalize" style={{ color: 'var(--text-primary)' }}>
-                  {category}
-                </h3>
-                <div className="space-y-4">
-                  {nfrs.map(nfr => (
-                    <div key={nfr.id} className="pl-5" style={{ borderLeft: '2px solid var(--border-default)' }}>
-                      <p className="text-[15px] leading-7" style={{ color: 'var(--text-secondary)' }}>
-                        <strong style={{ color: 'var(--text-primary)' }}>{nfr.id}:</strong> {nfr.requirement}
-                      </p>
-                      {nfr.target && (
-                        <p className="mt-1 text-[13px] italic leading-6" style={{ color: 'var(--text-muted)' }}>
-                          Target: {nfr.target}
-                        </p>
-                      )}
+          {/* 11. High-Level Non-Functional Expectations (only if present) */}
+          {projectRequirements.nfrs.length > 0 && (
+            <>
+              <SectionDivider />
+              <section className="print:break-before-auto">
+                <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--acfs-navy)' }}>
+                  11. High-Level Non-Functional Expectations
+                </h2>
+                {Array.from(nfrsByCategory.entries()).map(([category, nfrs]) => (
+                  <div key={category} className="mb-8">
+                    <h3 className="text-[17px] font-semibold mb-4 capitalize" style={{ color: 'var(--text-primary)' }}>
+                      {category}
+                    </h3>
+                    <div className="space-y-4">
+                      {nfrs.map(nfr => (
+                        <div key={nfr.id} className="pl-5" style={{ borderLeft: '2px solid var(--border-default)' }}>
+                          <p className="text-[15px] leading-7" style={{ color: 'var(--text-secondary)' }}>
+                            <strong style={{ color: 'var(--text-primary)' }}>{nfr.id}:</strong> {nfr.requirement}
+                          </p>
+                          {nfr.target && (
+                            <p className="mt-1 text-[13px] italic leading-6" style={{ color: 'var(--text-muted)' }}>
+                              Target: {nfr.target}
+                            </p>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </section>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
 
           {/* Print footer */}
           <div className="hidden print:block mt-12 pt-4 border-t text-center text-xs" style={{ color: 'var(--text-muted)' }}>

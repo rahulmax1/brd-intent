@@ -300,70 +300,76 @@ export function generateBRD(model: IntentModel, requirements: ProjectRequirement
     }
   }
 
-  // --- 9. Assumptions ---
-  push('## 9. Assumptions')
-  blank()
-
-  const assumptionsByCategory = new Map<string, typeof requirements.assumptions>()
-  for (const assumption of requirements.assumptions) {
-    const group = assumptionsByCategory.get(assumption.category) ?? []
-    group.push(assumption)
-    assumptionsByCategory.set(assumption.category, group)
-  }
-
-  for (const [category, assumptions] of assumptionsByCategory) {
-    push(`### ${category}`)
+  // --- 9. Assumptions (only if present) ---
+  if (requirements.assumptions && requirements.assumptions.length > 0) {
+    push('## 9. Assumptions')
     blank()
-    for (const a of assumptions) {
-      push(`**${a.id}:** ${a.assumption}`)
-      if (a.rationale) {
-        push(`  - *Rationale:* ${a.rationale}`)
+
+    const assumptionsByCategory = new Map<string, typeof requirements.assumptions>()
+    for (const assumption of requirements.assumptions) {
+      const group = assumptionsByCategory.get(assumption.category) ?? []
+      group.push(assumption)
+      assumptionsByCategory.set(assumption.category, group)
+    }
+
+    for (const [category, assumptions] of assumptionsByCategory) {
+      push(`### ${category}`)
+      blank()
+      for (const a of assumptions) {
+        push(`**${a.id}:** ${a.assumption}`)
+        if (a.rationale) {
+          push(`  - *Rationale:* ${a.rationale}`)
+        }
+        blank()
       }
-      blank()
     }
   }
 
-  // --- 10. Dependencies and Ownership ---
-  push('## 10. Dependencies and Ownership')
-  blank()
+  // --- 10. Dependencies and Ownership (only if present) ---
+  if (requirements.dependencies && requirements.dependencies.length > 0) {
+    push('## 10. Dependencies and Ownership')
+    blank()
 
-  for (const dep of requirements.dependencies) {
-    push(`### ${dep.name}`)
-    blank()
-    push(`**Dependency:** ${dep.description}`)
-    blank()
-    push(`**Owner:** ${dep.owner}`)
-    blank()
-    if (dep.status) {
-      push(`**Status:** ${dep.status}`)
+    for (const dep of requirements.dependencies) {
+      push(`### ${dep.name}`)
       blank()
-    }
-    if (dep.risk) {
-      push(`**Risk:** ${dep.risk}`)
+      push(`**Dependency:** ${dep.description}`)
       blank()
-    }
-  }
-
-  // --- 11. Non-Functional Requirements ---
-  push('## 11. High-Level Non-Functional Expectations')
-  blank()
-
-  const nfrsByCategory = new Map<string, typeof requirements.nfrs>()
-  for (const nfr of requirements.nfrs) {
-    const group = nfrsByCategory.get(nfr.category) ?? []
-    group.push(nfr)
-    nfrsByCategory.set(nfr.category, group)
-  }
-
-  for (const [category, nfrs] of nfrsByCategory) {
-    push(`### ${category.charAt(0).toUpperCase() + category.slice(1)}`)
-    blank()
-    for (const nfr of nfrs) {
-      push(`**${nfr.id}:** ${nfr.requirement}`)
-      if (nfr.target) {
-        push(`  - *Target:* ${nfr.target}`)
+      push(`**Owner:** ${dep.owner}`)
+      blank()
+      if (dep.status) {
+        push(`**Status:** ${dep.status}`)
+        blank()
       }
+      if (dep.risk) {
+        push(`**Risk:** ${dep.risk}`)
+        blank()
+      }
+    }
+  }
+
+  // --- 11. Non-Functional Requirements (only if present) ---
+  if (requirements.nfrs && requirements.nfrs.length > 0) {
+    push('## 11. High-Level Non-Functional Expectations')
+    blank()
+
+    const nfrsByCategory = new Map<string, typeof requirements.nfrs>()
+    for (const nfr of requirements.nfrs) {
+      const group = nfrsByCategory.get(nfr.category) ?? []
+      group.push(nfr)
+      nfrsByCategory.set(nfr.category, group)
+    }
+
+    for (const [category, nfrs] of nfrsByCategory) {
+      push(`### ${category.charAt(0).toUpperCase() + category.slice(1)}`)
       blank()
+      for (const nfr of nfrs) {
+        push(`**${nfr.id}:** ${nfr.requirement}`)
+        if (nfr.target) {
+          push(`  - *Target:* ${nfr.target}`)
+        }
+        blank()
+      }
     }
   }
 
