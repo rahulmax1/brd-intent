@@ -1,18 +1,29 @@
 import { intentModel } from '@/domain/intent-model/model'
 import { projectConfig } from '@/lib/project-config'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 
 export default function SimplePage() {
   const { actors, entities, journeys } = intentModel
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
-      <div className="mx-auto max-w-4xl px-8 py-12">
+    <div className="flex-1 overflow-y-auto">
+      <div className="px-8 py-8 max-w-4xl">
+        {/* Breadcrumb */}
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Derived Artefacts', href: '/#derived-artefacts' },
+              { label: 'Simple Version' },
+            ]}
+          />
+        </div>
+
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
             Simple Version
           </h1>
-          <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
             Plain language summary of {projectConfig.name}
           </p>
         </div>

@@ -20,6 +20,9 @@ import {
   TableProperties,
   GitCompare,
   Settings,
+  Sparkles,
+  Layers,
+  ExternalLink,
 } from 'lucide-react'
 
 type NavItem = {
@@ -51,12 +54,19 @@ type NavGroupWithParent = {
 
 const navGroups: NavGroupWithParent[] = [
   {
-    label: 'Model',
+    label: 'BRD & Discussions',
     items: [
+      { label: 'Current BRD', href: '/brd-current', icon: FileText },
+    ],
+  },
+  {
+    label: 'Intent Model',
+    items: [
+      { label: 'Consensus', href: '/consensus', icon: LayoutDashboard },
       {
-        label: 'Consensus',
-        href: '/consensus',
-        icon: LayoutDashboard,
+        label: 'Model Sections',
+        href: '/actors',
+        icon: Users,
         children: [
           { label: 'Actors', href: '/actors', icon: Users },
           { label: 'Entities', href: '/entities', icon: Box },
@@ -66,23 +76,19 @@ const navGroups: NavGroupWithParent[] = [
           { label: 'Open Questions', href: '/questions', icon: HelpCircle },
         ],
       },
+      { label: '3D Explorer', href: '/explorer', icon: Network },
+      { label: 'Version History', href: '/versions', icon: GitCompare },
     ],
   },
   {
-    label: 'Docs',
+    label: 'Derived Artefacts',
     items: [
-      { label: 'BRD', href: '/brd', icon: ClipboardList },
-      { label: 'API Spec', href: '/api-spec', icon: Code },
-      { label: 'Documents', href: '/documents', icon: FileText },
-    ],
-  },
-  {
-    label: 'Technical',
-    items: [
-      { label: 'Explorer', href: '/explorer', icon: Network },
-      { label: 'Architecture', href: '/architecture', icon: Map },
-      { label: 'Data Model', href: '/data-model', icon: TableProperties },
-      { label: 'Versions', href: '/versions', icon: GitCompare },
+      { label: 'Generated BRD', href: '/brd', icon: ClipboardList },
+      { label: 'Simple Version', href: '/simple', icon: Sparkles },
+      { label: 'Info Architecture', href: '/architecture', icon: Map },
+      { label: 'DB Schema', href: '/data-model', icon: TableProperties },
+      { label: 'API Specs', href: '/api-spec', icon: Code },
+      { label: 'Screens List', href: '/screens', icon: Layers },
     ],
   },
 ]

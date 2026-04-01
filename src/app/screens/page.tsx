@@ -1,5 +1,6 @@
 import { intentModel } from '@/domain/intent-model/model'
 import { Layers, Users, ArrowRight } from 'lucide-react'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 
 type Screen = {
   id: string
@@ -58,14 +59,24 @@ export default function ScreensPage() {
   }, {} as Record<string, Screen[]>)
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}>
-      <div className="mx-auto max-w-7xl px-8 py-12">
+    <div className="flex-1 overflow-y-auto">
+      <div className="px-8 py-8">
+        {/* Breadcrumb */}
+        <div className="mb-6">
+          <Breadcrumb
+            items={[
+              { label: 'Derived Artefacts', href: '/#derived-artefacts' },
+              { label: 'Screens List' },
+            ]}
+          />
+        </div>
+
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
             Screens List
           </h1>
-          <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base" style={{ color: 'var(--text-secondary)' }}>
             UI screens needed for implementation, generated from journey steps
           </p>
         </div>

@@ -40,7 +40,7 @@ const cardGroups = [
       {
         title: 'Current BRD',
         description: 'Original business requirements document (PDF)',
-        href: '/documents?doc=current-brd',
+        href: '/brd-current',
         icon: FileText,
         items: ['Source requirements', 'PDF viewer', 'Reference document'],
       },
