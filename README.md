@@ -40,6 +40,7 @@ See the **[Getting Started Guide](docs/getting-started.md)** for:
 - Troubleshooting
 
 **Quick links:**
+- [AI Journey Playbook](docs/ai-journey-playbook.md) — see how the AI-assisted workflow actually works
 - [Prompts Guide](docs/prompts-guide.md) — example prompts for building pentest models
 - [Workflows](docs/workflows.md) — how to use Adapt for pentest engagements
 - [Scripts Reference](docs/scripts-reference.md) — available scripts and when to use them
@@ -68,10 +69,11 @@ src/
     review/           # review pages
     api/              # API routes
 docs/
-  getting-started.md      # Setup and onboarding
-  prompts-guide.md        # AI prompt examples
-  workflows.md            # Pentest workflows
-  scripts-reference.md    # Scripts documentation
+  getting-started.md         # Setup and onboarding
+  ai-journey-playbook.md     # Step-by-step AI workflow demonstration
+  prompts-guide.md           # AI prompt examples
+  workflows.md               # Pentest workflows
+  scripts-reference.md       # Scripts documentation
 ```
 
 ## Using for your pentest engagement

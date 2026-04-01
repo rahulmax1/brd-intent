@@ -18,6 +18,7 @@ const UPLOADS_DIR = join(DOCS, 'uploads')
 const staticDocs: DocEntry[] = [
   // Project documentation
   { slug: 'getting-started', label: 'Getting Started Guide', path: join(DOCS, 'getting-started.md'), category: 'project' },
+  { slug: 'ai-journey', label: 'AI Journey Playbook — How It Works', path: join(DOCS, 'ai-journey-playbook.md'), category: 'project' },
   { slug: 'prompts-guide', label: 'Prompts Guide — AI Examples', path: join(DOCS, 'prompts-guide.md'), category: 'project' },
   { slug: 'workflows', label: 'Workflows — Pentest Process', path: join(DOCS, 'workflows.md'), category: 'project' },
   { slug: 'scripts-reference', label: 'Scripts Reference', path: join(DOCS, 'scripts-reference.md'), category: 'project' },
