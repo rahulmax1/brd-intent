@@ -260,7 +260,9 @@ export default function ReviewPage({ params }: Props) {
           <Graph3D model={model} />
         )}
         {effectiveTab === 'diff' && previousModel && (
-          <SideBySideDiff previous={previousModel} current={model} />
+          <div className="h-full overflow-y-auto p-6">
+            <SideBySideDiff previous={previousModel} current={model} />
+          </div>
         )}
         {effectiveTab === 'model' && (
           <ModelReader model={model} />
