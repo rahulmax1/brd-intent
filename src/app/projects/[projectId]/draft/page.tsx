@@ -60,6 +60,7 @@ export default function DraftPage({ params }: Props) {
   const [currentGapIndex, setCurrentGapIndex] = useState(0)
   const [gapComments, setGapComments] = useState<Record<string, string>>({})
   const [submittedGaps, setSubmittedGaps] = useState<Record<string, { comment: string; action: 'accepted' | 'rejected' }>>({})
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false)
 
   useEffect(() => {
     async function init() {
@@ -87,11 +88,10 @@ export default function DraftPage({ params }: Props) {
       if (data.project.intentModelVersions?.length > 0) {
         const shouldRegenerate = searchParams.get('regenerate') === 'true'
         if (shouldRegenerate) {
-          // Regenerate requested — reset old model, clear query param, then regenerate
+          // Show confirmation before regenerating
           router.replace(`/projects/${id}/draft`)
           setLoading(false)
-          await fetch(`/api/projects/${id}/reset-model`, { method: 'POST' })
-          generateDraft(id)
+          setConfirmRegenerate(true)
           return
         }
         const latestVersion = data.project.intentModelVersions[0]
@@ -453,9 +453,7 @@ export default function DraftPage({ params }: Props) {
                       Regenerate to incorporate the latest content.
                     </p>
                     <button
-                      onClick={() => {
-                        if (projectId) router.push(`/projects/${projectId}/draft?regenerate=true`)
-                      }}
+                      onClick={() => setConfirmRegenerate(true)}
                       className="mt-3 flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 active:scale-[0.98] transition-all duration-150"
                     >
                       <RefreshCw className="h-4 w-4" />
@@ -485,6 +483,49 @@ export default function DraftPage({ params }: Props) {
           </div>
         )}
       </div>
+
+      {/* Regenerate confirmation modal */}
+      {confirmRegenerate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h3 className="text-base font-semibold text-gray-900">Regenerate Draft</h3>
+              <button
+                onClick={() => setConfirmRegenerate(false)}
+                className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-6 py-5">
+              <p className="text-sm text-gray-600 leading-relaxed">
+                This will <strong className="text-gray-900">replace the current intent model</strong> with a fresh draft generated from your uploaded documents. All review decisions and artifacts will be reset.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => setConfirmRegenerate(false)}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setConfirmRegenerate(false)
+                  if (projectId) {
+                    await fetch(`/api/projects/${projectId}/reset-model`, { method: 'POST' })
+                    generateDraft(projectId)
+                  }
+                }}
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Regenerate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
