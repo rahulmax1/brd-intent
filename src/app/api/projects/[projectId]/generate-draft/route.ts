@@ -45,6 +45,13 @@ export async function POST(
       }
     }
 
+    if (documentContents.length === 0) {
+      return NextResponse.json(
+        { error: 'No document content available. Please re-upload your documents.' },
+        { status: 400 }
+      )
+    }
+
     // Generate intent model using AI
     const modelData = await generateIntentModel(documentContents, project.name)
 
@@ -131,8 +138,7 @@ Guidelines:
     const content = textBlock?.text
 
     if (!content) {
-      console.error('No content in Claude response')
-      return generateMockModel(projectName)
+      throw new Error('Empty response from Claude')
     }
 
     // Parse JSON response — strip markdown fences if present
@@ -141,14 +147,13 @@ Guidelines:
 
     // Validate structure
     if (!parsed.actors || !parsed.entities || !parsed.journeys || !parsed.businessRules) {
-      console.error('Invalid model structure from AI')
-      return generateMockModel(projectName)
+      throw new Error('Invalid model structure from AI: missing required fields')
     }
 
     return parsed
   } catch (error) {
     console.error('Failed to generate with AI:', error)
-    return generateMockModel(projectName)
+    throw error
   }
 }
 
