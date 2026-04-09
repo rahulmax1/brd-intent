@@ -365,7 +365,7 @@ Now go be the most annoyingly accurate documentation assistant anyone has ever e
 
 ---
 
-Here is the complete Adapt Canvas documentation:
+Here is the complete BRD Intent documentation:
 
 ${docsContent}
 

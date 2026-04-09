@@ -1,10 +1,10 @@
 import { type ProjectConfig } from '@/lib/project-config-schema'
 
 export const projectConfig: ProjectConfig = {
-  name: 'Adapt Canvas',
-  shortName: 'Adapt',
-  iconLetter: 'A',
-  description: 'Collaborative platform for structuring penetration testing engagements',
+  name: 'BRD Intent',
+  shortName: 'BRD',
+  iconLetter: 'B',
+  description: 'AI-powered intent model platform for structuring project requirements',
 
   abbreviations: {
     // Empty - users add their own domain acronyms

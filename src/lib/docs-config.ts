@@ -27,7 +27,7 @@ const staticDocs: DocEntry[] = [
   // Build log - keep Rahul's specs as examples
   { slug: 'spec-ai-editor', label: 'AI Model Editor Design', path: join(DOCS, 'superpowers', 'specs', '2026-03-17-ai-model-editor-design.md'), category: 'build-log' },
   { slug: 'plan-ai-editor', label: 'AI Model Editor Plan', path: join(DOCS, 'superpowers', 'plans', '2026-03-17-ai-model-editor.md'), category: 'build-log' },
-  { slug: 'spec-adapt', label: 'Adapt Canvas Design', path: join(DOCS, 'superpowers', 'specs', '2026-03-31-adapt-pentest-tool-design.md'), category: 'build-log' },
+  { slug: 'spec-adapt', label: 'BRD Intent Design', path: join(DOCS, 'superpowers', 'specs', '2026-03-31-adapt-pentest-tool-design.md'), category: 'build-log' },
 ]
 
 function getUploadedDocs(): DocEntry[] {

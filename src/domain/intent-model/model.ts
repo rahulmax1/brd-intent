@@ -3,7 +3,7 @@ import type { IntentModel } from './types'
 export const intentModel: IntentModel = {
   meta: {
     version: '0.1.0',
-    project: 'Adapt Canvas',
+    project: 'BRD Intent',
     lastUpdated: '2026-03-31',
     status: 'draft',
   },
