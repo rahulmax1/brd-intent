@@ -49,25 +49,16 @@ export async function POST(
       }
     }
 
-    // Check if a draft already exists
-    const existingVersion = await prisma.intentModelVersion.findFirst({
-      where: { projectId },
-    })
-
-    if (existingVersion) {
-      return NextResponse.json(
-        { error: 'Draft already exists' },
-        { status: 409 }
-      )
-    }
-
     // Generate intent model using AI
-    // For MVP, we'll use a mock implementation
-    // In production, this would call Anthropic Claude API
     const modelData = await generateIntentModel(documentContents, project.name)
 
-    // Get next version number (should be 1 since we checked no versions exist)
-    const versionNumber = 1
+    // Get next version number
+    const lastVersion = await prisma.intentModelVersion.findFirst({
+      where: { projectId },
+      orderBy: { versionNumber: 'desc' },
+      select: { versionNumber: true },
+    })
+    const versionNumber = (lastVersion?.versionNumber ?? 0) + 1
 
     // Create model version
     const modelVersion = await prisma.intentModelVersion.create({
@@ -75,7 +66,7 @@ export async function POST(
         projectId,
         versionNumber,
         modelData,
-        isSeed: versionNumber === 1,
+        isSeed: !lastVersion,
         prompt: 'Initial draft generation from uploaded documents',
       },
     })
