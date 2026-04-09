@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Sparkles, CheckCircle2, LayoutGrid, Code2, Upload, RefreshCw, AlertTriangle, Shield, Database, Route, Scale, Lock, HelpCircle } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, CheckCircle2, LayoutGrid, Code2, Upload, RefreshCw, AlertTriangle, Shield, Database, Route, Scale, Lock, HelpCircle, FileText, Search, X, ChevronRight, ChevronLeft, MessageSquare, ArrowUpRight } from 'lucide-react'
 import type { IntentModel, Actor, Entity, Journey, BusinessRule, Constraint, OpenQuestion } from '@/domain/intent-model/types'
 import { ProjectStepper } from '@/components/project-stepper'
 import { ProjectActionsMenu } from '@/components/project-actions-menu'
@@ -28,6 +28,16 @@ type Project = {
   intentModelVersions?: ModelVersion[]
 }
 
+type GapSuggestion = {
+  id: string
+  section: string
+  type: 'add' | 'modify'
+  title: string
+  description: string
+  evidence: string
+  priority: 'high' | 'medium' | 'low'
+}
+
 type Props = {
   params: Promise<{ projectId: string }>
 }
@@ -41,7 +51,15 @@ export default function DraftPage({ params }: Props) {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [draftView, setDraftView] = useState<'preview' | 'source'>('preview')
+  const [draftView, setDraftView] = useState<'preview' | 'source' | 'brd'>('preview')
+  const [brdContent, setBrdContent] = useState<string | null>(null)
+  const [brdLoading, setBrdLoading] = useState(false)
+  const [gaps, setGaps] = useState<GapSuggestion[]>([])
+  const [gapsLoading, setGapsLoading] = useState(false)
+  const [showGapModal, setShowGapModal] = useState(false)
+  const [currentGapIndex, setCurrentGapIndex] = useState(0)
+  const [gapComments, setGapComments] = useState<Record<string, string>>({})
+  const [submittedGaps, setSubmittedGaps] = useState<Record<string, { comment: string; action: 'accepted' | 'rejected' }>>({})
 
   useEffect(() => {
     async function init() {
@@ -147,6 +165,48 @@ export default function DraftPage({ params }: Props) {
     generateDraft(projectId)
   }
 
+  async function fetchBRD() {
+    if (!projectId || brdContent) return
+    setBrdLoading(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/artifacts/BRD`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        // Fetch the generated content
+        const getRes = await fetch(`/api/projects/${projectId}/artifacts/BRD`)
+        if (getRes.ok) {
+          const artData = await getRes.json()
+          setBrdContent(artData.artifact?.content ?? artData.content ?? null)
+        }
+      }
+    } catch {
+      // Fallback: generate BRD client-side from model
+    } finally {
+      setBrdLoading(false)
+    }
+  }
+
+  async function analyzeGaps() {
+    if (!projectId) return
+    setGapsLoading(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/analyze-gaps`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setGaps(data.suggestions ?? [])
+        setCurrentGapIndex(0)
+        setShowGapModal(true)
+      } else {
+        const data = await res.json()
+        setError(data.message ?? 'Gap analysis failed')
+      }
+    } catch {
+      setError('Failed to analyze gaps')
+    } finally {
+      setGapsLoading(false)
+    }
+  }
+
   async function handleMoveToReview() {
     if (!projectId) return
 
@@ -236,33 +296,35 @@ export default function DraftPage({ params }: Props) {
           <div className="space-y-6">
             {/* View tabs */}
             <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1 w-fit">
-              <button
-                onClick={() => setDraftView('preview')}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150 ${
-                  draftView === 'preview'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                Preview
-              </button>
-              <button
-                onClick={() => setDraftView('source')}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150 ${
-                  draftView === 'source'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Code2 className="h-3.5 w-3.5" />
-                Source
-              </button>
+              {([
+                { id: 'preview' as const, label: 'Preview', icon: LayoutGrid },
+                { id: 'source' as const, label: 'Source', icon: Code2 },
+                { id: 'brd' as const, label: 'Generated BRD', icon: FileText },
+              ]).map(tab => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setDraftView(tab.id)
+                      if (tab.id === 'brd') fetchBRD()
+                    }}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150 ${
+                      draftView === tab.id
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {tab.label}
+                  </button>
+                )
+              })}
             </div>
 
             {draftView === 'preview' ? (
               <ModelPreview model={model} />
-            ) : (
+            ) : draftView === 'source' ? (
               <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
                   <span className="text-xs font-medium text-gray-500">intent-model.json</span>
@@ -277,6 +339,97 @@ export default function DraftPage({ params }: Props) {
                   {JSON.stringify(model, null, 2)}
                 </pre>
               </div>
+            ) : (
+              <div className="space-y-4">
+                {/* BRD content */}
+                <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <span className="text-xs font-medium text-gray-500">Generated BRD from Intent Model</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={analyzeGaps}
+                        disabled={gapsLoading}
+                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        {gapsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                        Analyze Gaps
+                      </button>
+                      {brdContent && (
+                        <button
+                          onClick={() => navigator.clipboard.writeText(brdContent)}
+                          className="text-xs text-gray-500 hover:text-gray-900 transition-colors"
+                        >
+                          Copy
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {brdLoading ? (
+                    <div className="flex items-center justify-center py-20">
+                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : brdContent ? (
+                    <div className="p-6 prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-600 prose-li:text-gray-600 overflow-auto max-h-[700px] custom-scroll">
+                      <BRDRenderer content={brdContent} />
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-sm text-gray-500">
+                      <p>BRD will be generated from the intent model.</p>
+                      <button
+                        onClick={fetchBRD}
+                        className="mt-3 text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Generate now
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Submitted gap reviews */}
+                {Object.keys(submittedGaps).length > 0 && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-6">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Gap Review Log</h3>
+                    <div className="space-y-2">
+                      {Object.entries(submittedGaps).map(([gapId, { comment, action }]) => {
+                        const gap = gaps.find(g => g.id === gapId)
+                        return (
+                          <div key={gapId} className={`flex items-start gap-3 rounded-lg p-3 text-sm ${action === 'accepted' ? 'bg-green-50' : 'bg-gray-50'}`}>
+                            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded whitespace-nowrap mt-0.5 ${action === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                              {action}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-900">{gap?.title ?? gapId}</p>
+                              {comment && <p className="text-gray-600 mt-0.5">{comment}</p>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Gap Analysis Modal */}
+            {showGapModal && gaps.length > 0 && (
+              <GapModal
+                gaps={gaps}
+                currentIndex={currentGapIndex}
+                comments={gapComments}
+                onCommentChange={(id, val) => setGapComments(prev => ({ ...prev, [id]: val }))}
+                onSubmit={(action) => {
+                  const gap = gaps[currentGapIndex]
+                  setSubmittedGaps(prev => ({ ...prev, [gap.id]: { comment: gapComments[gap.id] ?? '', action } }))
+                  if (currentGapIndex < gaps.length - 1) {
+                    setCurrentGapIndex(currentGapIndex + 1)
+                  } else {
+                    setShowGapModal(false)
+                  }
+                }}
+                onPrev={() => setCurrentGapIndex(Math.max(0, currentGapIndex - 1))}
+                onNext={() => setCurrentGapIndex(Math.min(gaps.length - 1, currentGapIndex + 1))}
+                onClose={() => setShowGapModal(false)}
+              />
             )}
 
             {error && (
@@ -703,5 +856,155 @@ function IdBadge({ id, small }: { id: string; small?: boolean }) {
     >
       {id}
     </code>
+  )
+}
+
+function BRDRenderer({ content }: { content: string }) {
+  const lines = content.split('\n')
+  return (
+    <div>
+      {lines.map((line, i) => {
+        if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-bold text-gray-900 mt-8 mb-4 first:mt-0">{line.slice(2)}</h1>
+        if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-semibold text-gray-900 mt-6 mb-3">{line.slice(3)}</h2>
+        if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-medium text-gray-900 mt-4 mb-2">{line.slice(4)}</h3>
+        if (line.startsWith('- ')) return <li key={i} className="ml-4 text-sm text-gray-600 mb-1 list-disc">{line.slice(2)}</li>
+        if (line.startsWith('> ')) return <blockquote key={i} className="border-l-2 border-gray-300 pl-3 text-sm text-gray-500 italic my-2">{line.slice(2)}</blockquote>
+        if (line.trim() === '---') return <hr key={i} className="my-6 border-gray-200" />
+        if (line.trim() === '') return <div key={i} className="h-2" />
+        return <p key={i} className="text-sm text-gray-600 mb-2 leading-relaxed">{line}</p>
+      })}
+    </div>
+  )
+}
+
+function GapModal({
+  gaps,
+  currentIndex,
+  comments,
+  onCommentChange,
+  onSubmit,
+  onPrev,
+  onNext,
+  onClose,
+}: {
+  gaps: GapSuggestion[]
+  currentIndex: number
+  comments: Record<string, string>
+  onCommentChange: (id: string, val: string) => void
+  onSubmit: (action: 'accepted' | 'rejected') => void
+  onPrev: () => void
+  onNext: () => void
+  onClose: () => void
+}) {
+  const gap = gaps[currentIndex]
+  if (!gap) return null
+
+  const priorityColors = {
+    high: 'bg-red-50 text-red-700',
+    medium: 'bg-amber-50 text-amber-700',
+    low: 'bg-gray-100 text-gray-600',
+  }
+
+  const sectionLabels: Record<string, string> = {
+    actors: 'Actors',
+    entities: 'Entities',
+    journeys: 'Journeys',
+    businessRules: 'Business Rules',
+    constraints: 'Constraints',
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <Search className="h-5 w-5 text-blue-600" />
+            <span className="text-sm font-semibold text-gray-900">Gap Analysis</span>
+            <span className="text-xs text-gray-500">{currentIndex + 1} of {gaps.length}</span>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="px-6 py-5 space-y-4">
+          {/* Badges */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded ${priorityColors[gap.priority]}`}>
+              {gap.priority}
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-700">
+              {gap.type === 'add' ? '+ Add' : '~ Modify'}
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+              {sectionLabels[gap.section] ?? gap.section}
+            </span>
+          </div>
+
+          {/* Title & description */}
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">{gap.title}</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">{gap.description}</p>
+          </div>
+
+          {/* Evidence */}
+          {gap.evidence && (
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">From source document</p>
+              <p className="text-sm text-gray-700 italic leading-relaxed">&ldquo;{gap.evidence}&rdquo;</p>
+            </div>
+          )}
+
+          {/* Comment */}
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1.5 block">Your comment</label>
+            <textarea
+              value={comments[gap.id] ?? ''}
+              onChange={e => onCommentChange(gap.id, e.target.value)}
+              placeholder="Add your thoughts on this suggestion..."
+              rows={2}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onPrev}
+              disabled={currentIndex === 0}
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-30"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onNext}
+              disabled={currentIndex === gaps.length - 1}
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-30"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onSubmit('rejected')}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Skip
+            </button>
+            <button
+              onClick={() => onSubmit('accepted')}
+              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Accept
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
