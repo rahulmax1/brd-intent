@@ -131,7 +131,7 @@ export async function PATCH(
     // Update project
     const project = await prisma.project.update({
       where: { id: projectId },
-      data: updateData,
+      data: updateData as any,
     })
 
     return NextResponse.json({ project })

@@ -623,7 +623,7 @@ export function ModelReader({ model }: { model: IntentModel }) {
                 <IdBadge>{constraint.id}</IdBadge>
                 {constraint.type && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-gray-subtle)', color: 'var(--text-muted)' }}>{constraint.type}</span>}
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{constraint.constraint ?? constraint.description ?? ''}</p>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{constraint.constraint ?? ''}</p>
             </Card>
           ))}
         </div>
@@ -644,8 +644,8 @@ export function ModelReader({ model }: { model: IntentModel }) {
                     {q.status ?? 'open'}
                   </span>
                 </div>
-                <p className="text-sm font-semibold leading-relaxed mb-1" style={{ color: 'var(--text-primary)' }}>{q.question ?? q.name ?? ''}</p>
-                <p className="text-sm leading-relaxed mb-0" style={{ color: 'var(--text-secondary)' }}>{q.reason ?? q.description ?? ''}</p>
+                <p className="text-sm font-semibold leading-relaxed mb-1" style={{ color: 'var(--text-primary)' }}>{q.question ?? ''}</p>
+                <p className="text-sm leading-relaxed mb-0" style={{ color: 'var(--text-secondary)' }}>{q.reason ?? ''}</p>
                 {q.resolution && (
                   <p className="text-xs mt-2 mb-0 px-2 py-1.5 rounded" style={{ background: 'rgba(37,186,59,0.08)', color: '#166534' }}>
                     <span className="font-semibold">Resolution: </span>{q.resolution}

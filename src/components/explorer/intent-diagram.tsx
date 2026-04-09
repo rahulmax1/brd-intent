@@ -234,7 +234,7 @@ export function IntentDiagram({ model }: { model: IntentModel }) {
           position: { x: xPadding + col * 260, y: journeyStartY + row * 120 },
           data: {
             label: journey.name,
-            description: (journey.success_outcome ?? journey.description ?? '').substring(0, 80),
+            description: (journey.success_outcome ?? '').substring(0, 80),
           },
         })
       })
@@ -255,7 +255,7 @@ export function IntentDiagram({ model }: { model: IntentModel }) {
           type: 'rule',
           position: { x: xPadding + col * 260, y: ruleStartY + row * 120 },
           data: {
-            label: rule.name ?? rule.id,
+            label: rule.id,
             description: rule.description?.substring(0, 80) || '',
           },
         })

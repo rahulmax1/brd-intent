@@ -78,7 +78,7 @@ export async function POST(
           sizeBytes: file.size,
           storagePath: storagePath,
           label: file.name,
-          category,
+          category: category as any,
           processingStatus: 'PENDING',
         },
       })

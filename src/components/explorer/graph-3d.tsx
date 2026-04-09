@@ -238,7 +238,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       id: `constraint:${c.id}`,
       name: c.id,
       type: 'constraint',
-      description: (c.constraint ?? c.description ?? '').slice(0, 150),
+      description: (c.constraint ?? '').slice(0, 150),
       group: 'constraint',
       val: 10,
     })
@@ -247,7 +247,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       const names = [e.id, e.name.toLowerCase()]
       const abbr = e.name.match(/\(([A-Z][A-Z0-9]+)\)/)
       if (abbr) names.push(abbr[1].toLowerCase())
-      if (names.some(n => (c.constraint ?? c.description ?? '').toLowerCase().includes(n))) {
+      if (names.some(n => (c.constraint ?? '').toLowerCase().includes(n))) {
         links.push({ source: `constraint:${c.id}`, target: `entity:${e.id}`, type: 'constraint-entity' })
       }
     }
@@ -259,7 +259,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       id: `question:${q.id}`,
       name: q.id,
       type: 'open_question',
-      description: (q.question ?? q.description ?? '').slice(0, 150),
+      description: (q.question ?? '').slice(0, 150),
       group: 'open_question',
       val: 10,
     })

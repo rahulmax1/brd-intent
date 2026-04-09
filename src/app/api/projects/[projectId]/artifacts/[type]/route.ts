@@ -21,7 +21,7 @@ export async function GET(
       where: {
         projectId_artifactType: {
           projectId,
-          artifactType: type,
+          artifactType: type as any,
         },
       },
     })
