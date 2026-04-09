@@ -3,15 +3,28 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, MessageSquare, Sparkles, CheckCircle2, LayoutGrid, Code2 } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageSquare, Sparkles, CheckCircle2, LayoutGrid, Code2, Upload, RefreshCw, AlertTriangle } from 'lucide-react'
 import { ProjectStepper } from '@/components/project-stepper'
 import { ProjectActionsMenu } from '@/components/project-actions-menu'
+
+type Document = {
+  id: string
+  createdAt: string
+  processingStatus: string
+}
+
+type ModelVersion = {
+  id: string
+  createdAt: string
+}
 
 type Project = {
   id: string
   name: string
   description: string | null
   phase: string
+  documents?: Document[]
+  intentModelVersions?: ModelVersion[]
 }
 
 type IntentModel = {
@@ -278,16 +291,54 @@ export default function DraftPage({ params }: Props) {
               </div>
             )}
 
-            <div className="rounded-xl border border-gray-200 bg-white p-6">
+            {/* Stale model nudge */}
+            {(() => {
+              const modelDate = project?.intentModelVersions?.[0]?.createdAt
+              const newDocs = modelDate
+                ? (project?.documents ?? []).filter(d => d.processingStatus === 'COMPLETED' && new Date(d.createdAt) > new Date(modelDate))
+                : []
+              if (newDocs.length === 0) return null
+              return (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-900">
+                      {newDocs.length === 1
+                        ? 'A document was added after this draft was generated.'
+                        : `${newDocs.length} documents were added after this draft was generated.`}
+                    </p>
+                    <p className="mt-1 text-xs text-amber-700">
+                      Regenerate to incorporate the latest content.
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (projectId) router.push(`/projects/${projectId}/draft?regenerate=true`)
+                      }}
+                      className="mt-3 flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 active:scale-[0.98] transition-all duration-150"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Regenerate Draft
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Actions */}
+            <div className="rounded-xl border border-gray-200 bg-white p-6 flex items-center gap-3">
               <button
                 onClick={handleMoveToReview}
                 className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 active:scale-[0.98] transition-all duration-150"
               >
                 Move to Review
               </button>
-              <p className="mt-2 text-xs text-gray-500">
-                Explore and review the model before sharing for consensus.
-              </p>
+              <Link
+                href={`/projects/${projectId}/upload`}
+                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 active:scale-[0.98] transition-all duration-150"
+              >
+                <Upload className="h-4 w-4" />
+                Manage Documents
+              </Link>
             </div>
           </div>
         )}

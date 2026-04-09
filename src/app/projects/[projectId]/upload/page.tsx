@@ -296,7 +296,14 @@ export default function UploadPage({ params }: Props) {
 
               <div className="space-y-3">
                 {documents.map((doc) => (
-                  <DocumentRow key={doc.id} document={doc} />
+                  <DocumentRow
+                    key={doc.id}
+                    document={doc}
+                    onDelete={async (id) => {
+                      await fetch(`/api/projects/${projectId}/documents?id=${id}`, { method: 'DELETE' })
+                      setDocuments(prev => prev.filter(d => d.id !== id))
+                    }}
+                  />
                 ))}
               </div>
 
@@ -400,7 +407,9 @@ export default function UploadPage({ params }: Props) {
   )
 }
 
-function DocumentRow({ document }: { document: Document }) {
+function DocumentRow({ document, onDelete }: { document: Document; onDelete: (id: string) => void }) {
+  const [deleting, setDeleting] = useState(false)
+
   const statusConfig = {
     PENDING: { icon: Clock, color: 'text-gray-500', bg: 'bg-gray-100', label: 'Pending' },
     PROCESSING: { icon: Loader2, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Processing' },
@@ -430,11 +439,28 @@ function DocumentRow({ document }: { document: Document }) {
           </p>
         </div>
       </div>
-      <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${status.bg} flex-shrink-0`}>
-        <StatusIcon className={`h-3.5 w-3.5 ${status.color} ${document.processingStatus === 'PROCESSING' ? 'animate-spin' : ''}`} />
-        <span className={`text-xs font-medium ${status.color}`}>
-          {status.label}
-        </span>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${status.bg}`}>
+          <StatusIcon className={`h-3.5 w-3.5 ${status.color} ${document.processingStatus === 'PROCESSING' ? 'animate-spin' : ''}`} />
+          <span className={`text-xs font-medium ${status.color}`}>
+            {status.label}
+          </span>
+        </div>
+        <button
+          onClick={async () => {
+            setDeleting(true)
+            await onDelete(document.id)
+          }}
+          disabled={deleting}
+          className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+          title="Remove document"
+        >
+          {deleting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <XCircle className="h-4 w-4" />
+          )}
+        </button>
       </div>
     </div>
   )

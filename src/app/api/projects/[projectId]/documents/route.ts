@@ -104,6 +104,48 @@ export async function POST(
   }
 }
 
+// DELETE /api/projects/:projectId/documents?id=xxx - Delete a document
+export async function DELETE(
+  request: NextRequest,
+  context: RouteContext
+) {
+  try {
+    const { projectId } = await context.params
+    const { searchParams } = new URL(request.url)
+    const documentId = searchParams.get('id')
+
+    if (!documentId) {
+      return NextResponse.json({ error: 'Document ID required' }, { status: 400 })
+    }
+
+    const document = await prisma.document.findFirst({
+      where: { id: documentId, projectId },
+    })
+
+    if (!document) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 })
+    }
+
+    // Delete file from disk (best effort)
+    try {
+      const { unlink } = await import('fs/promises')
+      await unlink(document.storagePath)
+    } catch {
+      // File may already be gone
+    }
+
+    await prisma.document.delete({ where: { id: documentId } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Failed to delete document:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete document' },
+      { status: 500 }
+    )
+  }
+}
+
 function determineCategory(filename: string): string {
   const lower = filename.toLowerCase()
 
