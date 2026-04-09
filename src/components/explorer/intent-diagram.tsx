@@ -9,7 +9,7 @@ import type { IntentModel } from '@/domain/intent-model/types'
 function ActorNode({ data }: { data: { label: string; description: string; isPrimary?: boolean } }) {
   return (
     <div
-      className="px-4 py-3 rounded-lg border min-w-[160px] text-center"
+      className="px-4 py-3 rounded-lg border w-[230px] text-center"
       style={{
         background: data.isPrimary ? '#EEEDFE' : '#F1EFE8',
         borderColor: data.isPrimary ? '#534AB7' : '#5F5E5A',
@@ -19,7 +19,7 @@ function ActorNode({ data }: { data: { label: string; description: string; isPri
       <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
         {data.label}
       </div>
-      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+      <div className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
         {data.description}
       </div>
     </div>
@@ -29,7 +29,7 @@ function ActorNode({ data }: { data: { label: string; description: string; isPri
 function EntityNode({ data }: { data: { label: string; description: string; isCore?: boolean } }) {
   return (
     <div
-      className="px-4 py-3 rounded-lg border min-w-[180px]"
+      className="px-4 py-3 rounded-lg border w-[230px]"
       style={{
         background: data.isCore ? '#E6F1FB' : '#FAECE7',
         borderColor: data.isCore ? '#185FA5' : '#993C1D',
@@ -39,7 +39,7 @@ function EntityNode({ data }: { data: { label: string; description: string; isCo
       <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
         {data.label}
       </div>
-      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+      <div className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
         {data.description}
       </div>
     </div>
@@ -49,7 +49,7 @@ function EntityNode({ data }: { data: { label: string; description: string; isCo
 function JourneyNode({ data }: { data: { label: string; description: string } }) {
   return (
     <div
-      className="px-4 py-3 rounded-lg border min-w-[180px]"
+      className="px-4 py-3 rounded-lg border w-[230px]"
       style={{
         background: '#E1F5EE',
         borderColor: '#0F6E56',
@@ -59,7 +59,7 @@ function JourneyNode({ data }: { data: { label: string; description: string } })
       <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
         {data.label}
       </div>
-      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+      <div className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
         {data.description}
       </div>
     </div>
@@ -69,7 +69,7 @@ function JourneyNode({ data }: { data: { label: string; description: string } })
 function RuleNode({ data }: { data: { label: string; description: string } }) {
   return (
     <div
-      className="px-4 py-3 rounded-lg border min-w-[160px]"
+      className="px-4 py-3 rounded-lg border w-[230px]"
       style={{
         background: '#F1EFE8',
         borderColor: '#5F5E5A',
@@ -79,7 +79,7 @@ function RuleNode({ data }: { data: { label: string; description: string } }) {
       <div className="font-medium text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
         {data.label}
       </div>
-      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+      <div className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
         {data.description}
       </div>
     </div>
@@ -124,10 +124,9 @@ export function IntentDiagram({ model }: { model: IntentModel }) {
     const edges: Edge[] = []
     let yOffset = 20
     const xPadding = 50
-    const nodeSpacing = 220
+    const nodeSpacing = 260
     const sectionGap = 160
 
-    // Helper to add section
     const addSection = (label: string) => {
       nodes.push({
         id: `section-${label}`,
@@ -141,246 +140,127 @@ export function IntentDiagram({ model }: { model: IntentModel }) {
     }
 
     // ACTORS
-    addSection('ACTORS')
-    const actorStartY = yOffset
-    const actors = model.actors?.slice(0, 4) || []
-    actors.forEach((actor, i) => {
-      nodes.push({
-        id: `actor-${actor.id}`,
-        type: 'actor',
-        position: { x: xPadding + i * nodeSpacing, y: actorStartY },
-        data: {
-          label: actor.name,
-          description: actor.description?.split('\n')[0]?.substring(0, 40) || '',
-          isPrimary: i === 0,
-        },
-        sourcePosition: Position.Bottom,
-        targetPosition: Position.Top,
-      })
-    })
-
-    // Actor connections: LSP -> P4TC delegation
-    if (actors.length > 1) {
-      edges.push({
-        id: 'e-actor-delegate',
-        source: `actor-${actors[0].id}`,
-        target: `actor-${actors[1].id}`,
-        label: 'delegate',
-        style: { stroke: '#534AB7', strokeWidth: 2 },
-        labelStyle: { fontSize: 11, fill: '#534AB7' },
-      })
-    }
-
-    // ACFS manages all
+    const actors = model.actors?.slice(0, 6) ?? []
     if (actors.length > 0) {
-      edges.push({
-        id: 'e-actor-manages',
-        source: `actor-${actors[actors.length - 1].id}`,
-        target: `actor-${actors[0].id}`,
-        label: 'manages',
-        style: { stroke: '#888780', strokeWidth: 1, strokeDasharray: '4 3' },
-        labelStyle: { fontSize: 11, fill: '#888780' },
-        type: 'smoothstep',
+      addSection('ACTORS')
+      const actorStartY = yOffset
+      actors.forEach((actor, i) => {
+        nodes.push({
+          id: `actor-${actor.id}`,
+          type: 'actor',
+          position: { x: xPadding + i * nodeSpacing, y: actorStartY },
+          data: {
+            label: actor.name,
+            description: actor.description?.split('\n')[0]?.substring(0, 80) || '',
+            isPrimary: i === 0,
+          },
+          sourcePosition: Position.Bottom,
+          targetPosition: Position.Top,
+        })
       })
+      yOffset = actorStartY + sectionGap
     }
 
-    yOffset = actorStartY + sectionGap
-
-    // CORE ENTITIES
-    addSection('CORE ENTITIES')
-    const coreStartY = yOffset
-    const coreEntities = model.entities?.filter(e =>
-      ['HBL', 'Booking', 'Pickup Slot', 'PickupSlot'].includes(e.name)
-    ).slice(0, 3) || []
-
-    coreEntities.forEach((entity, i) => {
-      nodes.push({
-        id: `entity-${entity.id}`,
-        type: 'entity',
-        position: { x: xPadding + i * nodeSpacing, y: coreStartY },
-        data: {
-          label: entity.name,
-          description: entity.description?.substring(0, 45) || '',
-          isCore: true,
-        },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
-      })
-
-      // Connect entities left to right
-      if (i > 0) {
-        edges.push({
-          id: `e-entity-${i}`,
-          source: `entity-${coreEntities[i - 1].id}`,
-          target: `entity-${entity.id}`,
-          label: i === 1 ? 'booked in' : 'occupies',
-          style: { stroke: '#378ADD', strokeWidth: 2 },
-          labelStyle: { fontSize: 11, fill: '#378ADD' },
+    // ENTITIES
+    const entities = model.entities?.slice(0, 8) ?? []
+    if (entities.length > 0) {
+      addSection('ENTITIES')
+      const entityStartY = yOffset
+      const cols = Math.min(entities.length, 4)
+      entities.forEach((entity, i) => {
+        const row = Math.floor(i / cols)
+        const col = i % cols
+        nodes.push({
+          id: `entity-${entity.id}`,
+          type: 'entity',
+          position: { x: xPadding + col * 260, y: entityStartY + row * 120 },
+          data: {
+            label: entity.name,
+            description: entity.description?.substring(0, 80) || '',
+            isCore: true,
+          },
         })
-      }
-    })
-
-    // Actor to Entity connections
-    if (actors.length > 0 && coreEntities.length > 0) {
-      // LSP views HBLs
-      edges.push({
-        id: 'e-lsp-views-hbl',
-        source: `actor-${actors[0].id}`,
-        target: `entity-${coreEntities[0].id}`,
-        label: 'views',
-        style: { stroke: '#534AB7', strokeWidth: 1, strokeDasharray: '4 3' },
-        labelStyle: { fontSize: 11, fill: '#534AB7' },
-        type: 'smoothstep',
       })
-
-      // ACFS configures Pickup Slots
-      if (coreEntities.length > 2) {
-        edges.push({
-          id: 'e-acfs-configures',
-          source: `actor-${actors[actors.length - 1].id}`,
-          target: `entity-${coreEntities[2].id}`,
-          label: 'configures',
-          style: { stroke: '#0F6E56', strokeWidth: 1, strokeDasharray: '4 3' },
-          labelStyle: { fontSize: 11, fill: '#0F6E56' },
-          type: 'smoothstep',
-        })
-      }
+      const entityRows = Math.ceil(entities.length / cols)
+      yOffset = entityStartY + entityRows * 120 + 60
     }
 
-    yOffset = coreStartY + sectionGap
+    // LIFECYCLE — show for entities that have states
+    const entitiesWithLifecycle = entities.filter(
+      (e) => e.lifecycle?.states && e.lifecycle.states.length > 0,
+    ).slice(0, 2)
 
-    // HBL LIFECYCLE
-    addSection('HBL MILESTONE FLOW')
-    const lifecycleStartY = yOffset
-    const milestones = ['on vessel', 'at wharf', 'in yard', 'unpacked ✓', 'collected']
-    milestones.forEach((milestone, i) => {
-      nodes.push({
-        id: `milestone-${i}`,
-        type: 'lifecycle',
-        position: { x: xPadding + i * 140, y: lifecycleStartY },
-        data: {
-          label: milestone,
-          isFinal: i === milestones.length - 1,
-        },
-        sourcePosition: Position.Right,
-        targetPosition: Position.Left,
+    for (const entity of entitiesWithLifecycle) {
+      const states = entity.lifecycle.states
+      addSection(`${entity.name.toUpperCase()} LIFECYCLE`)
+      const lcStartY = yOffset
+      states.forEach((state, i) => {
+        nodes.push({
+          id: `lc-${entity.id}-${i}`,
+          type: 'lifecycle',
+          position: { x: xPadding + i * 140, y: lcStartY },
+          data: {
+            label: state,
+            isFinal: i === states.length - 1,
+          },
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
+        })
+
+        if (i > 0) {
+          edges.push({
+            id: `e-lc-${entity.id}-${i}`,
+            source: `lc-${entity.id}-${i - 1}`,
+            target: `lc-${entity.id}-${i}`,
+            style: { stroke: '#185FA5', strokeWidth: 2 },
+            animated: true,
+          })
+        }
       })
-
-      if (i > 0) {
-        edges.push({
-          id: `e-milestone-${i}`,
-          source: `milestone-${i - 1}`,
-          target: `milestone-${i}`,
-          style: { stroke: '#185FA5', strokeWidth: 2 },
-          animated: true,
-        })
-      }
-    })
-    yOffset = lifecycleStartY + 120
-
-    // SUPPORTING ENTITIES
-    addSection('SUPPORTING ENTITIES')
-    const supportStartY = yOffset
-    const supportingEntities = model.entities?.filter(e =>
-      !['HBL', 'Booking', 'Pickup Slot', 'PickupSlot'].includes(e.name)
-    ).slice(0, 4) || []
-
-    supportingEntities.forEach((entity, i) => {
-      nodes.push({
-        id: `support-${entity.id}`,
-        type: 'entity',
-        position: { x: xPadding + i * 200, y: supportStartY },
-        data: {
-          label: entity.name,
-          description: entity.description?.substring(0, 35) || '',
-          isCore: false,
-        },
-      })
-    })
-
-    // Core to Supporting entity connections
-    if (coreEntities.length > 0 && supportingEntities.length > 0) {
-      // HBL to first supporting (Delivery Order)
-      edges.push({
-        id: 'e-hbl-to-support',
-        source: `entity-${coreEntities[0].id}`,
-        target: `support-${supportingEntities[0].id}`,
-        style: { stroke: '#D85A30', strokeWidth: 1, strokeDasharray: '4 3' },
-        type: 'smoothstep',
-      })
-
-      // Booking to supporting entities
-      if (coreEntities.length > 1 && supportingEntities.length > 1) {
-        edges.push({
-          id: 'e-booking-to-support',
-          source: `entity-${coreEntities[1].id}`,
-          target: `support-${supportingEntities[1].id}`,
-          style: { stroke: '#D85A30', strokeWidth: 1, strokeDasharray: '4 3' },
-          type: 'smoothstep',
-        })
-      }
-
-      if (coreEntities.length > 1 && supportingEntities.length > 2) {
-        edges.push({
-          id: 'e-booking-to-payment',
-          source: `entity-${coreEntities[1].id}`,
-          target: `support-${supportingEntities[2].id}`,
-          style: { stroke: '#D85A30', strokeWidth: 1, strokeDasharray: '4 3' },
-          type: 'smoothstep',
-        })
-      }
-
-      // Pickup Slot to Site
-      if (coreEntities.length > 2 && supportingEntities.length > 3) {
-        edges.push({
-          id: 'e-slot-to-site',
-          source: `entity-${coreEntities[2].id}`,
-          target: `support-${supportingEntities[3].id}`,
-          style: { stroke: '#888780', strokeWidth: 1, strokeDasharray: '4 3' },
-          type: 'smoothstep',
-        })
-      }
+      yOffset = lcStartY + 120
     }
-
-    yOffset = supportStartY + sectionGap
 
     // KEY JOURNEYS
-    addSection('KEY JOURNEYS')
-    const journeyStartY = yOffset
-    const journeys = model.journeys?.slice(0, 6) || []
-    journeys.forEach((journey, i) => {
-      const row = Math.floor(i / 3)
-      const col = i % 3
-      nodes.push({
-        id: `journey-${journey.id}`,
-        type: 'journey',
-        position: { x: xPadding + col * 240, y: journeyStartY + row * 110 },
-        data: {
-          label: journey.name,
-          description: journey.success_outcome?.substring(0, 40) || '',
-        },
+    const journeys = model.journeys?.slice(0, 6) ?? []
+    if (journeys.length > 0) {
+      addSection('KEY JOURNEYS')
+      const journeyStartY = yOffset
+      journeys.forEach((journey, i) => {
+        const row = Math.floor(i / 3)
+        const col = i % 3
+        nodes.push({
+          id: `journey-${journey.id}`,
+          type: 'journey',
+          position: { x: xPadding + col * 260, y: journeyStartY + row * 120 },
+          data: {
+            label: journey.name,
+            description: (journey.success_outcome ?? journey.description ?? '').substring(0, 80),
+          },
+        })
       })
-    })
-    const journeyRows = Math.ceil(journeys.length / 3)
-    yOffset = journeyStartY + journeyRows * 110 + 40
+      const journeyRows = Math.ceil(journeys.length / 3)
+      yOffset = journeyStartY + journeyRows * 120 + 40
+    }
 
     // BUSINESS RULES
-    addSection('BUSINESS RULES (selected)')
-    const ruleStartY = yOffset
-    const rules = model.businessRules?.slice(0, 6) || []
-    rules.forEach((rule, i) => {
-      const row = Math.floor(i / 3)
-      const col = i % 3
-      nodes.push({
-        id: `rule-${rule.id}`,
-        type: 'rule',
-        position: { x: xPadding + col * 220, y: ruleStartY + row * 110 },
-        data: {
-          label: rule.id,
-          description: rule.description?.substring(0, 40) || '',
-        },
+    const rules = model.businessRules?.slice(0, 6) ?? []
+    if (rules.length > 0) {
+      addSection('BUSINESS RULES')
+      const ruleStartY = yOffset
+      rules.forEach((rule, i) => {
+        const row = Math.floor(i / 3)
+        const col = i % 3
+        nodes.push({
+          id: `rule-${rule.id}`,
+          type: 'rule',
+          position: { x: xPadding + col * 260, y: ruleStartY + row * 120 },
+          data: {
+            label: rule.name ?? rule.id,
+            description: rule.description?.substring(0, 80) || '',
+          },
+        })
       })
-    })
+    }
 
     return { nodes, edges }
   }, [model])

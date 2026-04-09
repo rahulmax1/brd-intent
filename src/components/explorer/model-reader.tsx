@@ -193,7 +193,7 @@ export function ModelReader({ model }: { model: IntentModel }) {
             margin: 0,
             letterSpacing: '-0.02em'
           }}>
-            {model.meta.project}
+            {model.meta?.project ?? 'Intent Model'}
           </h1>
           <div style={{
             display: 'flex',
@@ -208,20 +208,22 @@ export function ModelReader({ model }: { model: IntentModel }) {
               color: 'var(--accent-blue)',
               fontVariantNumeric: 'tabular-nums'
             }}>
-              v{model.meta.version}
+              v{model.meta?.version ?? 1}
             </span>
             <span style={{
               textTransform: 'capitalize',
               color: 'var(--text-muted)'
             }}>
-              {model.meta.status}
+              {model.meta?.status ?? 'draft'}
             </span>
+            {model.meta?.lastUpdated && (
             <span style={{
               color: 'var(--text-muted)',
               fontVariantNumeric: 'tabular-nums'
             }}>
               Updated {model.meta.lastUpdated}
             </span>
+            )}
           </div>
         </div>
 
@@ -250,11 +252,11 @@ export function ModelReader({ model }: { model: IntentModel }) {
             {([
               ['actors', 'Actors', model.actors.length],
               ['entities', 'Entities', model.entities.filter(e => !e.is_integration).length],
-              ['integrations', 'Integrations', model.entities.filter(e => e.is_integration).length],
+              ['integrations', 'Integrations', model.entities.filter(e => !!e.is_integration).length],
               ['journeys', 'Journeys', model.journeys.length],
               ['businessRules', 'Business Rules', model.businessRules.length],
-              ['constraints', 'Constraints', model.constraints.length],
-              ['openQuestions', 'Open Questions', model.openQuestions.length],
+              ['constraints', 'Constraints', (model.constraints ?? []).length],
+              ['openQuestions', 'Open Questions', (model.openQuestions ?? []).length],
             ] as const).map(([key, label, count]) => (
               <a
                 key={key}
@@ -318,7 +320,7 @@ export function ModelReader({ model }: { model: IntentModel }) {
                 maxWidth: 'var(--measure-base)',
                 marginBottom: '1.25rem'
               }}>{actor.description}</p>
-              <FieldRow label="Auth" value={actor.auth} />
+              {actor.auth && <FieldRow label="Auth" value={actor.auth} />}
               <div style={{ marginTop: '1.25rem' }}>
                 <p style={{
                   fontSize: 'var(--text-xs)',
@@ -328,9 +330,9 @@ export function ModelReader({ model }: { model: IntentModel }) {
                   marginBottom: '0.75rem',
                   color: 'var(--text-muted)'
                 }}>
-                  Responsibilities ({actor.responsibilities.length})
+                  Responsibilities ({actor.responsibilities?.length ?? 0})
                 </p>
-                {actor.responsibilities.map(r => (
+                {(actor.responsibilities ?? []).map(r => (
                   <div key={r.id} style={{
                     paddingTop: '1rem',
                     paddingBottom: '1rem',
@@ -365,7 +367,7 @@ export function ModelReader({ model }: { model: IntentModel }) {
         {/* Entities */}
         <div id="section-entities" className="mb-10">
           <SectionHeading title="Entities" count={model.entities.filter(e => !e.is_integration).length} section="entities" />
-          {model.entities.filter(e => !e.is_integration).map(entity => {
+          {model.entities.filter(e => !e.is_integration).map((entity) => {
             const isExpanded = expandedSections.has(entity.id)
             return (
               <Card key={entity.id} id={`entity-${entity.id}`}>
@@ -389,7 +391,7 @@ export function ModelReader({ model }: { model: IntentModel }) {
                     color: 'var(--text-muted)',
                     fontVariantNumeric: 'tabular-nums'
                   }}>
-                    {entity.key_fields.length} fields · {entity.lifecycle.states.length} states
+                    {entity.key_fields?.length ?? 0} fields · {entity.lifecycle?.states?.length ?? 0} states
                   </span>
                 </div>
                 <p style={{
@@ -420,7 +422,7 @@ export function ModelReader({ model }: { model: IntentModel }) {
                         marginBottom: '0.75rem',
                         color: 'var(--text-muted)'
                       }}>Fields</p>
-                      {entity.key_fields.map(f => (
+                      {(entity.key_fields ?? []).map(f => (
                         <div key={f.name} style={{
                           paddingTop: '1rem',
                           paddingBottom: '1rem',
@@ -466,16 +468,16 @@ export function ModelReader({ model }: { model: IntentModel }) {
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Lifecycle</p>
                       <div className="flex flex-wrap items-center gap-1 mb-3">
-                        {entity.lifecycle.states.map((s, i) => (
+                        {(entity.lifecycle?.states ?? []).map((s, i) => (
                           <span key={s} className="flex items-center gap-1">
                             <StatePill>{s}</StatePill>
-                            {i < entity.lifecycle.states.length - 1 && <span style={{ color: 'var(--text-muted)' }}>→</span>}
+                            {i < (entity.lifecycle?.states?.length ?? 0) - 1 && <span style={{ color: 'var(--text-muted)' }}>→</span>}
                           </span>
                         ))}
                       </div>
-                      {entity.lifecycle.transitions.length > 0 && (
+                      {(entity.lifecycle?.transitions?.length ?? 0) > 0 && (
                         <div className="space-y-2">
-                          {entity.lifecycle.transitions.map((t, i) => (
+                          {(entity.lifecycle?.transitions ?? []).map((t, i) => (
                             <div key={i} className="flex items-start gap-2 text-xs py-1.5" style={{ borderBottom: '1px solid var(--border-default)' }}>
                               <StatePill>{t.from}</StatePill>
                               <span style={{ color: 'var(--text-muted)' }}>→</span>
@@ -495,15 +497,15 @@ export function ModelReader({ model }: { model: IntentModel }) {
 
         {/* Integrations */}
         <div id="section-integrations" className="mb-10">
-          <SectionHeading title="Integrations" count={model.entities.filter(e => e.is_integration).length} section="entities" />
-          {model.entities.filter(e => e.is_integration).map(entity => (
+          <SectionHeading title="Integrations" count={model.entities.filter(e => !!e.is_integration).length} section="entities" />
+          {model.entities.filter(e => !!e.is_integration).map(entity => (
             <Card key={entity.id} id={`entity-${entity.id}`}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md" style={{ background: 'var(--bg-gray-subtle)', color: 'var(--text-muted)' }}>Integration</span>
                 <h3 className="text-sm font-bold m-0" style={{ color: 'var(--text-primary)' }}>{entity.name}</h3>
               </div>
               <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--text-secondary)' }}>{entity.description}</p>
-              {entity.key_fields.map(f => (
+              {(entity.key_fields ?? []).map(f => (
                 <div key={f.name} className="py-1.5" style={{ borderBottom: '1px solid var(--border-default)' }}>
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-mono text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{f.name}</span>
@@ -525,14 +527,14 @@ export function ModelReader({ model }: { model: IntentModel }) {
                 <SectionBadge section="journeys" />
                 <h3 className="text-sm font-bold m-0" style={{ color: 'var(--text-primary)' }}>{journey.name}</h3>
               </div>
-              <FieldRow label="Actor" value={journey.primary_actor} />
-              {journey.preconditions.length > 0 && (
+              {journey.primary_actor && <FieldRow label="Actor" value={journey.primary_actor} />}
+              {(journey.preconditions?.length ?? 0) > 0 && (
                 <div className="text-xs px-3 py-2 rounded-lg my-2" style={{ background: 'rgba(245,158,11,0.06)', color: '#92400E', border: '1px solid rgba(245,158,11,0.15)' }}>
-                  <span className="font-semibold">Preconditions: </span>{journey.preconditions.join(' · ')}
+                  <span className="font-semibold">Preconditions: </span>{journey.preconditions?.join(' · ')}
                 </div>
               )}
               <div className="mt-3">
-                {journey.steps.map(s => (
+                {(journey.steps ?? []).map(s => (
                   <div key={s.order} className="flex gap-3 py-2.5" style={{ borderBottom: '1px solid var(--border-default)' }}>
                     <div
                       className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
@@ -548,10 +550,12 @@ export function ModelReader({ model }: { model: IntentModel }) {
                   </div>
                 ))}
               </div>
-              <div className="mt-3 text-sm">
-                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Outcome: </span>
-                <span style={{ color: 'var(--text-secondary)' }}>{journey.success_outcome}</span>
-              </div>
+              {journey.success_outcome && (
+                <div className="mt-3 text-sm">
+                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Outcome: </span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{journey.success_outcome}</span>
+                </div>
+              )}
               {journey.warn && <p className="text-xs mt-2 mb-0 px-2 py-1 rounded" style={{ background: 'rgba(245,158,11,0.08)', color: '#92400E' }}>{journey.warn}</p>}
             </Card>
           ))}
@@ -573,7 +577,7 @@ export function ModelReader({ model }: { model: IntentModel }) {
                   fontSize: 'var(--text-xs)',
                   marginLeft: 'auto',
                   color: 'var(--text-muted)'
-                }}>{rule.source}</span>
+                }}>{rule.source ?? ''}</span>
               </div>
               <p style={{
                 fontSize: 'var(--text-base)',
@@ -582,9 +586,9 @@ export function ModelReader({ model }: { model: IntentModel }) {
                 color: 'var(--text-primary)',
                 maxWidth: 'var(--measure-base)'
               }}>{rule.description}</p>
-              {rule.applies_to.length > 0 && (
+              {(rule.applies_to?.length ?? 0) > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
-                  {rule.applies_to.map(ref => (
+                  {(rule.applies_to ?? []).map(ref => (
                     <span key={ref} style={{
                       fontSize: '0.6875rem',
                       fontWeight: 500,
@@ -612,23 +616,23 @@ export function ModelReader({ model }: { model: IntentModel }) {
 
         {/* Constraints */}
         <div id="section-constraints" className="mb-10">
-          <SectionHeading title="Constraints" count={model.constraints.length} section="constraints" />
-          {model.constraints.map(constraint => (
+          <SectionHeading title="Constraints" count={(model.constraints ?? []).length} section="constraints" />
+          {(model.constraints ?? []).map(constraint => (
             <Card key={constraint.id} id={`constraint-${constraint.id}`}>
               <div className="flex items-center gap-2 mb-2">
                 <IdBadge>{constraint.id}</IdBadge>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-gray-subtle)', color: 'var(--text-muted)' }}>{constraint.type}</span>
+                {constraint.type && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-gray-subtle)', color: 'var(--text-muted)' }}>{constraint.type}</span>}
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{constraint.constraint}</p>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>{constraint.constraint ?? constraint.description ?? ''}</p>
             </Card>
           ))}
         </div>
 
         {/* Open Questions */}
         <div id="section-openQuestions" className="mb-10">
-          <SectionHeading title="Open Questions" count={model.openQuestions.length} section="openQuestions" />
-          {model.openQuestions.map(q => {
-            const statusColor = q.status === 'resolved' ? '#10B981' : q.status === 'deferred' ? '#F59E0B' : '#EF4444'
+          <SectionHeading title="Open Questions" count={(model.openQuestions ?? []).length} section="openQuestions" />
+          {(model.openQuestions ?? []).map(q => {
+            const statusColor = q.status === 'resolved' ? '#10B981' : q.status === 'deferred' ? '#F59E0B' : q.status ? '#EF4444' : 'var(--text-muted)'
             return (
               <Card key={q.id} id={`question-${q.id}`}>
                 <div className="flex items-center gap-2 mb-2">
@@ -637,11 +641,11 @@ export function ModelReader({ model }: { model: IntentModel }) {
                     className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded"
                     style={{ background: `${statusColor}18`, color: statusColor }}
                   >
-                    {q.status}
+                    {q.status ?? 'open'}
                   </span>
                 </div>
-                <p className="text-sm font-semibold leading-relaxed mb-1" style={{ color: 'var(--text-primary)' }}>{q.question}</p>
-                <p className="text-sm leading-relaxed mb-0" style={{ color: 'var(--text-secondary)' }}>{q.reason}</p>
+                <p className="text-sm font-semibold leading-relaxed mb-1" style={{ color: 'var(--text-primary)' }}>{q.question ?? q.name ?? ''}</p>
+                <p className="text-sm leading-relaxed mb-0" style={{ color: 'var(--text-secondary)' }}>{q.reason ?? q.description ?? ''}</p>
                 {q.resolution && (
                   <p className="text-xs mt-2 mb-0 px-2 py-1.5 rounded" style={{ background: 'rgba(37,186,59,0.08)', color: '#166534' }}>
                     <span className="font-semibold">Resolution: </span>{q.resolution}

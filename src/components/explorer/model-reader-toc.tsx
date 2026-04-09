@@ -23,11 +23,11 @@ export function ModelReaderToc({ model, containerRef }: ModelReaderTocProps) {
   const items: TocItem[] = [
     ...model.actors.map(a => ({ id: `actor-${a.id}`, label: a.name, section: 'actors' })),
     ...model.entities.filter(e => !e.is_integration).map(e => ({ id: `entity-${e.id}`, label: e.name, section: 'entities' })),
-    ...model.entities.filter(e => e.is_integration).map(e => ({ id: `entity-${e.id}`, label: e.name, section: 'integrations' })),
+    ...model.entities.filter(e => !!e.is_integration).map(e => ({ id: `entity-${e.id}`, label: e.name, section: 'integrations' })),
     ...model.journeys.map(j => ({ id: `journey-${j.id}`, label: j.name, section: 'journeys' })),
     ...model.businessRules.map(r => ({ id: `rule-${r.id}`, label: r.id, section: 'businessRules' })),
-    ...model.constraints.map(c => ({ id: `constraint-${c.id}`, label: c.id, section: 'constraints' })),
-    ...model.openQuestions.map(q => ({ id: `question-${q.id}`, label: q.id, section: 'openQuestions' })),
+    ...(model.constraints ?? []).map(c => ({ id: `constraint-${c.id}`, label: c.id, section: 'constraints' })),
+    ...(model.openQuestions ?? []).map(q => ({ id: `question-${q.id}`, label: q.id, section: 'openQuestions' })),
   ]
 
   useEffect(() => {

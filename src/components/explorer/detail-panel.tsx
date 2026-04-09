@@ -43,9 +43,9 @@ function EntityDetail({ entity, relationships }: {
 
       {/* Fields table */}
       <div>
-        <FieldLabel>Fields ({entity.key_fields.length})</FieldLabel>
+        <FieldLabel>Fields ({entity.key_fields?.length ?? 0})</FieldLabel>
         <div className="space-y-2">
-          {entity.key_fields.map((f) => (
+          {(entity.key_fields ?? []).map((f) => (
             <div key={f.name} className="py-2" style={{ borderBottom: '1px solid var(--border-default)' }}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-mono text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{f.name}</span>
@@ -59,9 +59,9 @@ function EntityDetail({ entity, relationships }: {
 
       {/* Lifecycle */}
       <div>
-        <FieldLabel>Lifecycle ({entity.lifecycle.states.length} states)</FieldLabel>
+        <FieldLabel>Lifecycle ({entity.lifecycle?.states?.length ?? 0} states)</FieldLabel>
         <div className="flex flex-wrap items-center gap-1 mb-2">
-          {entity.lifecycle.states.map((s, i) => (
+          {(entity.lifecycle?.states ?? []).map((s, i) => (
             <span key={s} className="flex items-center gap-1">
               <span
                 className="rounded px-2 py-0.5 text-xs font-mono font-medium"
@@ -69,12 +69,12 @@ function EntityDetail({ entity, relationships }: {
               >
                 {s}
               </span>
-              {i < entity.lifecycle.states.length - 1 && <span style={{ color: 'var(--text-muted)' }}>→</span>}
+              {i < (entity.lifecycle?.states?.length ?? 0) - 1 && <span style={{ color: 'var(--text-muted)' }}>→</span>}
             </span>
           ))}
         </div>
 
-        {entity.lifecycle.transitions.length > 0 && (
+        {(entity.lifecycle?.transitions?.length ?? 0) > 0 && (
           <>
             <button
               type="button"
@@ -95,8 +95,8 @@ function EntityDetail({ entity, relationships }: {
                   </tr>
                 </thead>
                 <tbody>
-                  {entity.lifecycle.transitions.map((t, i) => (
-                    <tr key={i} style={{ borderBottom: i < entity.lifecycle.transitions.length - 1 ? '1px solid var(--border-default)' : 'none' }}>
+                  {(entity.lifecycle?.transitions ?? []).map((t, i) => (
+                    <tr key={i} style={{ borderBottom: i < (entity.lifecycle?.transitions?.length ?? 0) - 1 ? '1px solid var(--border-default)' : 'none' }}>
                       <td className="py-2 pr-2 align-top font-mono text-xs" style={{ color: 'var(--text-primary)' }}>{t.from}</td>
                       <td className="py-2 pr-2 align-top font-mono text-xs" style={{ color: 'var(--text-primary)' }}>{t.to}</td>
                       <td className="py-2 align-top text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{t.trigger}</td>

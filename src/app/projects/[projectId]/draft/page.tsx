@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, MessageSquare, Sparkles, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageSquare, Sparkles, CheckCircle2, LayoutGrid, Code2 } from 'lucide-react'
 import { ProjectStepper } from '@/components/project-stepper'
+import { ProjectActionsMenu } from '@/components/project-actions-menu'
 
 type Project = {
   id: string
@@ -26,12 +27,14 @@ type Props = {
 
 export default function DraftPage({ params }: Props) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [projectId, setProjectId] = useState<string | null>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [model, setModel] = useState<IntentModel | null>(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [draftView, setDraftView] = useState<'preview' | 'source'>('preview')
 
   useEffect(() => {
     async function init() {
@@ -57,8 +60,22 @@ export default function DraftPage({ params }: Props) {
 
       // Check if there's already a model version
       if (data.project.intentModelVersions?.length > 0) {
+        const shouldRegenerate = searchParams.get('regenerate') === 'true'
+        if (shouldRegenerate) {
+          // Regenerate requested — reset old model, clear query param, then regenerate
+          router.replace(`/projects/${id}/draft`)
+          setLoading(false)
+          await fetch(`/api/projects/${id}/reset-model`, { method: 'POST' })
+          generateDraft(id)
+          return
+        }
         const latestVersion = data.project.intentModelVersions[0]
         setModel(latestVersion.modelData as IntentModel)
+      } else {
+        // No model yet — auto-start generation
+        setLoading(false)
+        generateDraft(id)
+        return
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -67,23 +84,33 @@ export default function DraftPage({ params }: Props) {
     }
   }
 
-  async function handleGenerateDraft() {
-    if (!projectId) return
-
+  async function generateDraft(id: string) {
     setGenerating(true)
     setError(null)
 
     try {
-      const res = await fetch(`/api/projects/${projectId}/generate-draft`, {
+      const res = await fetch(`/api/projects/${id}/generate-draft`, {
         method: 'POST',
       })
 
       if (!res.ok) {
         const data = await res.json()
 
-        // If draft already exists (409), reload the page to show it
+        // If draft already exists (409), reset old versions and retry
         if (res.status === 409) {
-          window.location.reload()
+          await fetch(`/api/projects/${id}/reset-model`, { method: 'POST' })
+          const retryRes = await fetch(`/api/projects/${id}/generate-draft`, {
+            method: 'POST',
+          })
+          if (retryRes.ok) {
+            const retryData = await retryRes.json()
+            setModel(retryData.modelVersion.modelData as IntentModel)
+            await fetch(`/api/projects/${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phase: 'DRAFT' }),
+            })
+          }
           return
         }
 
@@ -94,7 +121,7 @@ export default function DraftPage({ params }: Props) {
       setModel(data.modelVersion.modelData as IntentModel)
 
       // Update project phase to DRAFT
-      await fetch(`/api/projects/${projectId}`, {
+      await fetch(`/api/projects/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phase: 'DRAFT' }),
@@ -104,6 +131,11 @@ export default function DraftPage({ params }: Props) {
     } finally {
       setGenerating(false)
     }
+  }
+
+  function handleGenerateDraft() {
+    if (!projectId) return
+    generateDraft(projectId)
   }
 
   async function handleMoveToReview() {
@@ -154,14 +186,23 @@ export default function DraftPage({ params }: Props) {
             <ArrowLeft className="h-4 w-4" />
             Back to Projects
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {project?.name}
-            </h1>
-            {project?.description && (
-              <p className="mt-1 text-sm text-gray-600">
-                {project.description}
-              </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {project?.name}
+              </h1>
+              {project?.description && (
+                <p className="mt-1 text-sm text-gray-600">
+                  {project.description}
+                </p>
+              )}
+            </div>
+            {project && (
+              <ProjectActionsMenu
+                projectId={projectId!}
+                projectName={project.name}
+                hasModel={!!model}
+              />
             )}
           </div>
         </div>
@@ -184,7 +225,50 @@ export default function DraftPage({ params }: Props) {
           />
         ) : (
           <div className="space-y-6">
-            <ModelPreview model={model} />
+            {/* View tabs */}
+            <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-1 w-fit">
+              <button
+                onClick={() => setDraftView('preview')}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150 ${
+                  draftView === 'preview'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Preview
+              </button>
+              <button
+                onClick={() => setDraftView('source')}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150 ${
+                  draftView === 'source'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Code2 className="h-3.5 w-3.5" />
+                Source
+              </button>
+            </div>
+
+            {draftView === 'preview' ? (
+              <ModelPreview model={model} />
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+                  <span className="text-xs font-medium text-gray-500">intent-model.json</span>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(JSON.stringify(model, null, 2))}
+                    className="text-xs text-gray-500 hover:text-gray-900 transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <pre className="p-4 overflow-auto max-h-[600px] text-xs leading-relaxed text-gray-800 font-mono custom-scroll">
+                  {JSON.stringify(model, null, 2)}
+                </pre>
+              </div>
+            )}
 
             {error && (
               <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
@@ -195,7 +279,7 @@ export default function DraftPage({ params }: Props) {
             <div className="rounded-xl border border-gray-200 bg-white p-6">
               <button
                 onClick={handleMoveToReview}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 active:scale-[0.98] transition-all duration-150"
               >
                 Move to Review
               </button>
@@ -210,6 +294,19 @@ export default function DraftPage({ params }: Props) {
   )
 }
 
+const PROGRESS_MESSAGES = [
+  'Reading and parsing your documents…',
+  'Extracting key concepts and terminology…',
+  'Identifying actors and their roles…',
+  'Mapping out core entities…',
+  'Tracing user journeys and workflows…',
+  'Discovering business rules and constraints…',
+  'Analyzing entity relationships…',
+  'Structuring the intent model…',
+  'Validating model consistency…',
+  'Finalizing the draft…',
+]
+
 function EmptyState({
   generating,
   error,
@@ -219,6 +316,21 @@ function EmptyState({
   error: string | null
   onGenerate: () => void
 }) {
+  const [msgIndex, setMsgIndex] = useState(0)
+
+  useEffect(() => {
+    if (!generating) {
+      setMsgIndex(0)
+      return
+    }
+    const interval = setInterval(() => {
+      setMsgIndex((prev) =>
+        prev < PROGRESS_MESSAGES.length - 1 ? prev + 1 : prev,
+      )
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [generating])
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
       <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-50 to-purple-50 mb-6">
@@ -245,7 +357,7 @@ function EmptyState({
         <button
           onClick={onGenerate}
           disabled={generating}
-          className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-8 py-3.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-8 py-3.5 text-sm font-medium text-white hover:bg-blue-700 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           {generating ? (
             <>
@@ -261,12 +373,15 @@ function EmptyState({
         </button>
 
         {generating && (
-          <div className="space-y-2">
-            <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-              <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: '100%' }} />
+          <div className="space-y-3">
+            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+              <div
+                className="h-full bg-blue-600 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${Math.min(((msgIndex + 1) / PROGRESS_MESSAGES.length) * 100, 95)}%` }}
+              />
             </div>
-            <p className="text-xs text-center text-gray-600">
-              AI is analyzing your documents and generating the intent model...
+            <p className="text-xs text-center text-gray-600 transition-opacity duration-300">
+              {PROGRESS_MESSAGES[msgIndex]}
             </p>
           </div>
         )}
@@ -328,7 +443,7 @@ function Section({
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {items.map((item) => (
           <div
             key={item.id}

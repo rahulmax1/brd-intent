@@ -1,0 +1,124 @@
+// Document Upload API
+import { NextRequest, NextResponse } from 'next/server'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
+import { prisma } from '@/lib/db'
+
+type RouteContext = {
+  params: Promise<{ projectId: string }>
+}
+
+// POST /api/projects/:projectId/documents - Upload documents
+export async function POST(
+  request: NextRequest,
+  context: RouteContext
+) {
+  try {
+    const { projectId } = await context.params
+
+    // Check if project exists
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+    })
+
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+
+    // Parse form data
+    const formData = await request.formData()
+    const files = formData.getAll('files') as File[]
+
+    if (files.length === 0) {
+      return NextResponse.json(
+        { error: 'No files provided' },
+        { status: 400 }
+      )
+    }
+
+    // Validate files
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    for (const file of files) {
+      if (file.size > maxSize) {
+        return NextResponse.json(
+          { error: `File ${file.name} exceeds 10MB limit` },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Create uploads directory
+    const uploadsDir = join(process.cwd(), 'uploads', projectId)
+    await mkdir(uploadsDir, { recursive: true })
+
+    // Process each file
+    const documents = []
+    for (const file of files) {
+      // Generate unique filename
+      const timestamp = Date.now()
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const filename = `${timestamp}-${sanitizedName}`
+      const storagePath = join(uploadsDir, filename)
+
+      // Save file
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      await writeFile(storagePath, buffer)
+
+      // Determine category from filename or default to UPLOAD
+      const category = determineCategory(file.name)
+
+      // Create document record
+      const document = await prisma.document.create({
+        data: {
+          projectId,
+          filename: file.name,
+          originalFilename: file.name,
+          mimeType: file.type || 'application/octet-stream',
+          sizeBytes: file.size,
+          storagePath: storagePath,
+          label: file.name,
+          category,
+          processingStatus: 'PENDING',
+        },
+      })
+
+      documents.push(document)
+
+      // TODO: Trigger async text extraction
+      // For now, we'll mark as COMPLETED immediately
+      // In production, this would be a background job
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { processingStatus: 'COMPLETED' },
+      })
+    }
+
+    return NextResponse.json({ documents }, { status: 201 })
+  } catch (error) {
+    console.error('Failed to upload documents:', error)
+    return NextResponse.json(
+      { error: 'Failed to upload documents' },
+      { status: 500 }
+    )
+  }
+}
+
+function determineCategory(filename: string): string {
+  const lower = filename.toLowerCase()
+
+  if (lower.includes('brd') || lower.includes('requirements')) {
+    return 'BRD'
+  }
+  if (lower.includes('transcript') || lower.includes('meeting')) {
+    return 'TRANSCRIPT'
+  }
+  if (lower.includes('miro') || lower.includes('whiteboard')) {
+    return 'MIRO'
+  }
+  if (lower.includes('technical') || lower.includes('spec')) {
+    return 'TECHNICAL'
+  }
+
+  return 'UPLOAD'
+}

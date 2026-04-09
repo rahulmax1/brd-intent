@@ -1,0 +1,248 @@
+// Intent Model Platform - Single-User MVP
+// Database schema for multi-project support
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+// ============================================
+// PROJECT & WORKFLOW
+// ============================================
+
+model Project {
+  id          String    @id @default(uuid())
+  slug        String    @unique
+  name        String
+  description String?
+  phase       Phase     @default(UPLOAD)
+  phaseData   Json      @default("{}")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  archivedAt  DateTime? @map("archived_at")
+
+  // Relations
+  documents           Document[]
+  intentModelVersions IntentModelVersion[]
+  reviewDecisions     ReviewDecision[]
+  aiConversations     AiConversation[]
+  generatedArtifacts  GeneratedArtifact[]
+
+  @@map("projects")
+}
+
+enum Phase {
+  UPLOAD
+  DRAFT
+  CONSENSUS
+  EXPORT
+  ARCHIVED
+}
+
+// ============================================
+// DOCUMENT MANAGEMENT
+// ============================================
+
+model Document {
+  id               String            @id @default(uuid())
+  projectId        String            @map("project_id")
+  filename         String
+  originalFilename String            @map("original_filename")
+  mimeType         String            @map("mime_type")
+  sizeBytes        Int               @map("size_bytes")
+  storagePath      String            @map("storage_path")
+  label            String
+  category         DocumentCategory
+  processingStatus ProcessingStatus  @default(PENDING) @map("processing_status")
+  extractedText    String?           @map("extracted_text") @db.Text
+  extractionError  String?           @map("extraction_error")
+  createdAt        DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  messageLinkage AiMessage[] @relation("ReferencedDocuments")
+
+  @@index([projectId])
+  @@index([processingStatus])
+  @@map("documents")
+}
+
+enum DocumentCategory {
+  BRD
+  TRANSCRIPT
+  MIRO
+  TECHNICAL
+  UPLOAD
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// INTENT MODEL VERSIONING
+// ============================================
+
+model IntentModelVersion {
+  id              String    @id @default(uuid())
+  projectId       String    @map("project_id")
+  versionNumber   Int       @map("version_number")
+  modelData       Json      @map("model_data")
+  parentVersionId String?   @map("parent_version_id")
+  prompt          String?   @db.Text
+  isSeed          Boolean   @default(false) @map("is_seed")
+  isSnapshot      Boolean   @default(false) @map("is_snapshot")
+  snapshotLabel   String?   @map("snapshot_label")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  project         Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentVersion   IntentModelVersion?    @relation("VersionLineage", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions   IntentModelVersion[]   @relation("VersionLineage")
+  reviewDecisions ReviewDecision[]
+  artifacts       GeneratedArtifact[]
+
+  @@unique([projectId, versionNumber])
+  @@index([projectId])
+  @@index([createdAt])
+  @@map("intent_model_versions")
+}
+
+// ============================================
+// CONSENSUS REVIEW
+// ============================================
+
+model ReviewDecision {
+  id             String       @id @default(uuid())
+  projectId      String       @map("project_id")
+  modelVersionId String       @map("model_version_id")
+  targetType     TargetType   @map("target_type")
+  targetId       String       @map("target_id")
+  status         ReviewStatus @default(PENDING)
+  comment        String?      @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  project      Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  modelVersion IntentModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, modelVersionId, targetType, targetId])
+  @@index([projectId])
+  @@index([modelVersionId])
+  @@index([status])
+  @@map("review_decisions")
+}
+
+enum TargetType {
+  ACTOR
+  ENTITY
+  JOURNEY
+  BUSINESS_RULE
+  CONSTRAINT
+  OPEN_QUESTION
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  DISPUTED
+}
+
+// ============================================
+// AI CONVERSATIONS
+// ============================================
+
+model AiConversation {
+  id          String              @id @default(uuid())
+  projectId   String              @map("project_id")
+  phase       ConversationPhase
+  status      ConversationStatus  @default(ACTIVE)
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  completedAt DateTime?           @map("completed_at")
+
+  // Relations
+  project  Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  messages AiMessage[]
+
+  @@index([projectId])
+  @@index([status])
+  @@map("ai_conversations")
+}
+
+enum ConversationPhase {
+  DRAFT
+  CONSENSUS
+  EDITING
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+model AiMessage {
+  id               String   @id @default(uuid())
+  conversationId   String   @map("conversation_id")
+  role             Role
+  content          String   @db.Text
+  promptTokens     Int?     @map("prompt_tokens")
+  completionTokens Int?     @map("completion_tokens")
+  model            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  conversation        AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  referencedDocuments Document[]     @relation("ReferencedDocuments")
+
+  @@index([conversationId])
+  @@map("ai_messages")
+}
+
+enum Role {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// ============================================
+// ARTIFACT GENERATION
+// ============================================
+
+model GeneratedArtifact {
+  id             String       @id @default(uuid())
+  projectId      String       @map("project_id")
+  artifactType   ArtifactType @map("artifact_type")
+  filename       String
+  storagePath    String       @map("storage_path")
+  sizeBytes      Int?         @map("size_bytes")
+  modelVersionId String       @map("model_version_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  project      Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  modelVersion IntentModelVersion @relation(fields: [modelVersionId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, artifactType])
+  @@index([projectId])
+  @@index([artifactType])
+  @@map("generated_artifacts")
+}
+
+enum ArtifactType {
+  BRD
+  ZOD_SCHEMAS
+  API_STUBS
+  MIGRATION
+  TYPESCRIPT_TYPES
+  CONTRACT
+}

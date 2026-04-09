@@ -175,7 +175,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       type: 'entity',
       description: e.description.slice(0, 150),
       group: 'entity',
-      val: 8 + e.key_fields.length,
+      val: 8 + (e.key_fields?.length ?? 0),
     })
   }
 
@@ -187,7 +187,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       type: 'actor',
       description: a.description.slice(0, 150),
       group: 'actor',
-      val: 6 + a.responsibilities.length,
+      val: 6 + (a.responsibilities?.length ?? 0),
     })
   }
 
@@ -197,14 +197,14 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       id: `journey:${j.id}`,
       name: j.name,
       type: 'journey',
-      description: `${j.steps.length} steps — ${j.success_outcome.slice(0, 100)}`,
+      description: `${j.steps?.length ?? 0} steps — ${(j.success_outcome ?? j.description ?? '').slice(0, 100)}`,
       group: 'journey',
-      val: 4 + j.steps.length,
+      val: 4 + (j.steps?.length ?? 0),
     })
 
     // Journey → primary actor
-    const actorNodeId = `actor:${j.primary_actor}`
-    if (nodes.some(n => n.id === actorNodeId)) {
+    const actorNodeId = j.primary_actor ? `actor:${j.primary_actor}` : ''
+    if (actorNodeId && nodes.some(n => n.id === actorNodeId)) {
       links.push({ source: `journey:${j.id}`, target: actorNodeId, type: 'journey-actor' })
     }
   }
@@ -221,7 +221,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
     })
 
     // Rule → applies_to entities/actors
-    for (const ref of r.applies_to) {
+    for (const ref of r.applies_to ?? []) {
       const entityId = `entity:${ref}`
       const actorId = `actor:${ref}`
       if (nodes.some(n => n.id === entityId)) {
@@ -233,12 +233,12 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
   }
 
   // Constraints — link to entities mentioned in constraint text
-  for (const c of model.constraints) {
+  for (const c of model.constraints ?? []) {
     nodes.push({
       id: `constraint:${c.id}`,
       name: c.id,
       type: 'constraint',
-      description: c.constraint.slice(0, 150),
+      description: (c.constraint ?? c.description ?? '').slice(0, 150),
       group: 'constraint',
       val: 10,
     })
@@ -247,19 +247,19 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       const names = [e.id, e.name.toLowerCase()]
       const abbr = e.name.match(/\(([A-Z][A-Z0-9]+)\)/)
       if (abbr) names.push(abbr[1].toLowerCase())
-      if (names.some(n => c.constraint.toLowerCase().includes(n))) {
+      if (names.some(n => (c.constraint ?? c.description ?? '').toLowerCase().includes(n))) {
         links.push({ source: `constraint:${c.id}`, target: `entity:${e.id}`, type: 'constraint-entity' })
       }
     }
   }
 
   // Open questions — link to entities mentioned in question text
-  for (const q of model.openQuestions) {
+  for (const q of model.openQuestions ?? []) {
     nodes.push({
       id: `question:${q.id}`,
       name: q.id,
       type: 'open_question',
-      description: q.question.slice(0, 150),
+      description: (q.question ?? q.description ?? '').slice(0, 150),
       group: 'open_question',
       val: 10,
     })
@@ -268,7 +268,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       const names = [e.id, e.name.toLowerCase()]
       const abbr = e.name.match(/\(([A-Z][A-Z0-9]+)\)/)
       if (abbr) names.push(abbr[1].toLowerCase())
-      if (names.some(n => q.question.toLowerCase().includes(n) || q.reason.toLowerCase().includes(n))) {
+      if (names.some(n => (q.question ?? '').toLowerCase().includes(n) || (q.reason ?? '').toLowerCase().includes(n))) {
         links.push({ source: `question:${q.id}`, target: `entity:${e.id}`, type: 'question-entity' })
       }
     }
@@ -282,7 +282,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       const abbr = other.name.match(/\(([A-Z][A-Z0-9]+)\)/)
       if (abbr) otherNames.push(abbr[1].toLowerCase())
 
-      const hasRef = entity.key_fields.some(f => {
+      const hasRef = (entity.key_fields ?? []).some(f => {
         const text = `${f.type} ${f.description}`.toLowerCase()
         return otherNames.some(n => text.includes(n))
       })

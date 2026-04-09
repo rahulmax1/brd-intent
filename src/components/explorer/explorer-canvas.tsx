@@ -104,7 +104,7 @@ export function ExplorerCanvas({ model, savedPositions }: { model: IntentModel; 
 
   // Stats
   const totalItems = model.actors.length + model.entities.length + model.journeys.length
-    + model.businessRules.length + model.constraints.length + model.openQuestions.length
+    + model.businessRules.length + (model.constraints?.length ?? 0) + (model.openQuestions?.length ?? 0)
   const selectedRelationships = selectedEntityId ? graphData.relationshipMap.get(selectedEntityId) : null
 
   return (
@@ -183,10 +183,10 @@ export function ExplorerCanvas({ model, savedPositions }: { model: IntentModel; 
         }}
       >
         <span className="text-[11px] font-semibold" style={{ color: 'var(--accent-blue)' }}>
-          v{model.meta.version}
+          v{model.meta?.version ?? 1}
         </span>
         <span className="text-[11px] font-medium capitalize" style={{ color: 'var(--text-muted)' }}>
-          {model.meta.status}
+          {model.meta?.status ?? 'draft'}
         </span>
         <div className="h-3 w-px" style={{ background: 'var(--border-default)' }} />
         <span className="text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>

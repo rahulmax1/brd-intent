@@ -1,13 +1,19 @@
 import { z } from 'zod'
-import OpenAI from 'openai'
+import AnthropicBedrock from '@anthropic-ai/bedrock-sdk'
 import { getCurrentModel } from '@/lib/model-store'
 import { SECTION_TYPE_TO_MODEL_KEY } from '@/domain/intent-model/types'
 import type { SectionType } from '@/domain/intent-model/types'
 
-let _openai: OpenAI | null = null
-function getOpenAI() {
-  if (!_openai) _openai = new OpenAI()
-  return _openai
+const BEDROCK_MODEL = 'anthropic.claude-sonnet-4-20250514-v1:0'
+
+let _client: AnthropicBedrock | null = null
+function getClient() {
+  if (!_client) {
+    _client = new AnthropicBedrock({
+      awsRegion: process.env.AWS_REGION ?? 'ap-southeast-2',
+    })
+  }
+  return _client
 }
 
 const PlanRequestSchema = z.object({
@@ -48,23 +54,22 @@ ${contextJson}
 ## Requested change
 ${prompt}`
 
-    const stream = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o-mini',
+    const stream = getClient().messages.stream({
+      model: BEDROCK_MODEL,
+      system: systemPrompt,
       messages: [
-        { role: 'system', content: systemPrompt },
         { role: 'user', content: userContent },
       ],
       temperature: 0.3,
-      stream: true,
+      max_tokens: 2000,
     })
 
     const encoder = new TextEncoder()
     const readable = new ReadableStream({
       async start(controller) {
-        for await (const chunk of stream) {
-          const text = chunk.choices[0]?.delta?.content ?? ''
-          if (text) {
-            controller.enqueue(encoder.encode(text))
+        for await (const event of stream) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            controller.enqueue(encoder.encode(event.delta.text))
           }
         }
         controller.close()

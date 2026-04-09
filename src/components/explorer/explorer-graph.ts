@@ -87,7 +87,7 @@ export function findEntityEdges(
       const matchesAny = (text: string) => patterns.some((re) => re.test(text))
 
       // Scan key_fields descriptions
-      const fieldReason = entity.key_fields.find((f) => matchesAny(f.description))
+      const fieldReason = entity.key_fields?.find((f) => matchesAny(f.description))
       if (fieldReason) {
         edges.push({
           targetEntityId: other.id,
@@ -97,7 +97,7 @@ export function findEntityEdges(
       }
 
       // Scan lifecycle transitions (trigger + guard)
-      const transitionReason = entity.lifecycle.transitions.find(
+      const transitionReason = entity.lifecycle?.transitions?.find(
         (t) => matchesAny(t.trigger) || (t.guard ? matchesAny(t.guard) : false),
       )
       if (transitionReason) {
@@ -130,7 +130,7 @@ export function findRelationships(entity: Entity, model: IntentModel): EntityRel
 
   // Business rules: check applies_to list and description
   const rules = model.businessRules.filter((br) => {
-    if (br.applies_to.some((ref) => matchesAny(ref))) return true
+    if (br.applies_to?.some((ref) => matchesAny(ref))) return true
     if (matchesAny(br.description)) return true
     return false
   })
@@ -138,22 +138,22 @@ export function findRelationships(entity: Entity, model: IntentModel): EntityRel
   // Journeys: check name, preconditions, step titles and details
   const journeys = model.journeys.filter((j) => {
     if (matchesAny(j.name)) return true
-    if (j.preconditions.some((p) => matchesAny(p))) return true
-    if (j.steps.some((s) => matchesAny(s.title) || matchesAny(s.detail))) return true
+    if (j.preconditions?.some((p) => matchesAny(p))) return true
+    if (j.steps?.some((s) => matchesAny(s.title) || matchesAny(s.detail))) return true
     return false
   })
 
   // Actors: check responsibilities
   const actors = model.actors.filter((a) =>
-    a.responsibilities.some((r) => matchesAny(r.description)),
+    a.responsibilities?.some((r) => matchesAny(r.description)),
   )
 
   // Constraints: check constraint text
-  const constraints = model.constraints.filter((c) => matchesAny(c.constraint))
+  const constraints = (model.constraints ?? []).filter((c) => c.constraint && matchesAny(c.constraint))
 
   // Open questions: only show unresolved ones (resolved = already incorporated into the model)
-  const openQuestions = model.openQuestions.filter(
-    (oq) => oq.status !== 'resolved' && (matchesAny(oq.question) || matchesAny(oq.reason)),
+  const openQuestions = (model.openQuestions ?? []).filter(
+    (oq) => oq.status !== 'resolved' && ((oq.question && matchesAny(oq.question)) || (oq.reason && matchesAny(oq.reason))),
   )
 
   // Entity edges are computed separately — return empty here
@@ -245,8 +245,8 @@ export function buildExplorerGraph(model: IntentModel, savedPositions?: Explorer
     data: {
       entityId: entity.id,
       name: entity.name,
-      fieldCount: entity.key_fields.length,
-      stateCount: entity.lifecycle.states.length,
+      fieldCount: entity.key_fields?.length ?? 0,
+      stateCount: entity.lifecycle?.states?.length ?? 0,
       description: entity.description,
     },
   }))

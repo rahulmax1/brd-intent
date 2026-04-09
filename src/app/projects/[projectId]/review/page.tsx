@@ -17,6 +17,7 @@ import {
 import type { IntentModel } from '@/domain/intent-model/types'
 import type { ExplorerPositions } from '@/lib/explorer-positions-store'
 import { ProjectStepper } from '@/components/project-stepper'
+import { ProjectActionsMenu } from '@/components/project-actions-menu'
 import { ExplorerCanvas } from '@/components/explorer/explorer-canvas'
 import { IntentDiagram } from '@/components/explorer/intent-diagram'
 import { Graph3D } from '@/components/explorer/graph-3d'
@@ -189,14 +190,23 @@ export default function ReviewPage({ params }: Props) {
             <ArrowLeft className="h-4 w-4" />
             Back to Projects
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {project?.name}
-            </h1>
-            {project?.description && (
-              <p className="mt-1 text-sm text-gray-600">
-                {project.description}
-              </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {project?.name}
+              </h1>
+              {project?.description && (
+                <p className="mt-1 text-sm text-gray-600">
+                  {project.description}
+                </p>
+              )}
+            </div>
+            {project && (
+              <ProjectActionsMenu
+                projectId={projectId!}
+                projectName={project.name}
+                hasModel={!!model}
+              />
             )}
           </div>
         </div>
@@ -285,7 +295,7 @@ export default function ReviewPage({ params }: Props) {
           <button
             onClick={handleMoveToConsensus}
             disabled={transitioning}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {transitioning ? (
               <>

@@ -1,14 +1,20 @@
-import OpenAI from 'openai'
+import AnthropicBedrock from '@anthropic-ai/bedrock-sdk'
 import type { IntentModel, SectionType } from '@/domain/intent-model/types'
 import { SECTION_TYPE_TO_MODEL_KEY } from '@/domain/intent-model/types'
 import { IntentModelSchema, SectionSchemas } from './model-schemas'
 import { projectConfig } from '@/lib/project-config'
 import { generateTypeDefinitions } from './ai-type-definitions'
 
-let _openai: OpenAI | null = null
-function getOpenAI() {
-  if (!_openai) _openai = new OpenAI()
-  return _openai
+const BEDROCK_MODEL = 'anthropic.claude-sonnet-4-20250514-v1:0'
+
+let _client: AnthropicBedrock | null = null
+function getClient() {
+  if (!_client) {
+    _client = new AnthropicBedrock({
+      awsRegion: process.env.AWS_REGION ?? 'ap-southeast-2',
+    })
+  }
+  return _client
 }
 
 // Generate type definitions dynamically from source types
@@ -74,19 +80,19 @@ ${JSON.stringify(req.currentModel, null, 2)}
 ${req.prompt}`
   }
 
-  const response = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o-mini',
-    response_format: { type: 'json_object' },
+  const response = await getClient().messages.create({
+    model: BEDROCK_MODEL,
+    system: systemPrompt,
     messages: [
-      { role: 'system', content: systemPrompt },
       { role: 'user', content: userContent },
     ],
     temperature: 0.2,
     max_tokens: req.scope === 'section' ? 8000 : 16000,
   })
 
-  const content = response.choices[0]?.message?.content
-  if (!content) throw new Error('Empty response from OpenAI')
+  const textBlock = response.content.find(b => b.type === 'text')
+  const content = textBlock?.text
+  if (!content) throw new Error('Empty response from Claude')
 
   const parsed = JSON.parse(content)
 
