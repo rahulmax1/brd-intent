@@ -197,7 +197,7 @@ function buildGraphData(model: IntentModel): { nodes: GraphNode[]; links: GraphL
       id: `journey:${j.id}`,
       name: j.name,
       type: 'journey',
-      description: `${j.steps?.length ?? 0} steps — ${(j.success_outcome ?? j.description ?? '').slice(0, 100)}`,
+      description: `${j.steps?.length ?? 0} steps — ${(j.success_outcome ?? '').slice(0, 100)}`,
       group: 'journey',
       val: 4 + (j.steps?.length ?? 0),
     })
