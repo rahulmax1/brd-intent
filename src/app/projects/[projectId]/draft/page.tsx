@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, MessageSquare, Sparkles, CheckCircle2, LayoutGrid, Code2, Upload, RefreshCw, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, CheckCircle2, LayoutGrid, Code2, Upload, RefreshCw, AlertTriangle, Shield, Database, Route, Scale, Lock, HelpCircle } from 'lucide-react'
+import type { IntentModel, Actor, Entity, Journey, BusinessRule, Constraint, OpenQuestion } from '@/domain/intent-model/types'
 import { ProjectStepper } from '@/components/project-stepper'
 import { ProjectActionsMenu } from '@/components/project-actions-menu'
 
@@ -25,13 +26,6 @@ type Project = {
   phase: string
   documents?: Document[]
   intentModelVersions?: ModelVersion[]
-}
-
-type IntentModel = {
-  actors: Array<{ id: string; name: string; description: string }>
-  entities: Array<{ id: string; name: string; description: string }>
-  journeys: Array<{ id: string; name: string; description: string }>
-  businessRules: Array<{ id: string; name: string; description: string }>
 }
 
 type Props = {
@@ -444,69 +438,234 @@ function EmptyState({
 }
 
 function ModelPreview({ model }: { model: IntentModel }) {
+  const stats = [
+    { label: 'Actors', count: model.actors?.length ?? 0, icon: Shield, color: 'text-blue-600' },
+    { label: 'Entities', count: model.entities?.length ?? 0, icon: Database, color: 'text-emerald-600' },
+    { label: 'Journeys', count: model.journeys?.length ?? 0, icon: Route, color: 'text-violet-600' },
+    { label: 'Rules', count: model.businessRules?.length ?? 0, icon: Scale, color: 'text-amber-600' },
+    { label: 'Constraints', count: model.constraints?.length ?? 0, icon: Lock, color: 'text-rose-600' },
+    { label: 'Open Questions', count: model.openQuestions?.length ?? 0, icon: HelpCircle, color: 'text-gray-500' },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Summary */}
       <div className="rounded-xl border border-gray-200 bg-white p-6">
         <div className="flex items-center gap-2 mb-4">
           <CheckCircle2 className="h-5 w-5 text-green-600" />
-          <h2 className="text-lg font-semibold text-gray-900">
-            Draft Generated
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">Draft Generated</h2>
         </div>
-        <div className="grid grid-cols-4 gap-4">
-          <StatCard label="Actors" count={model.actors.length} />
-          <StatCard label="Entities" count={model.entities.length} />
-          <StatCard label="Journeys" count={model.journeys.length} />
-          <StatCard label="Business Rules" count={model.businessRules.length} />
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+          {stats.map(s => {
+            const Icon = s.icon
+            return (
+              <div key={s.label} className="rounded-lg bg-gray-50 px-4 py-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Icon className={`h-3.5 w-3.5 ${s.color}`} />
+                  <span className="text-xs text-gray-500">{s.label}</span>
+                </div>
+                <div className="text-2xl font-bold text-gray-900">{s.count}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
       {/* Actors */}
-      <Section title="Actors" items={model.actors} />
+      {(model.actors?.length ?? 0) > 0 && (
+        <SectionCard title="Actors" icon={Shield} iconColor="text-blue-600">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {model.actors.map((actor: Actor) => (
+              <div key={actor.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-900">{actor.name}</h3>
+                  {actor.auth && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 whitespace-nowrap">{actor.auth}</span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mb-3">{actor.description}</p>
+                {actor.responsibilities?.length > 0 && (
+                  <div className="border-t border-gray-100 pt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Responsibilities</p>
+                    <ul className="space-y-1.5">
+                      {actor.responsibilities.map(r => (
+                        <li key={r.id} className="flex items-start gap-2 text-xs text-gray-600">
+                          <span className="mt-1 h-1 w-1 rounded-full bg-gray-400 flex-shrink-0" />
+                          <span>{r.description}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {/* Entities */}
-      <Section title="Entities" items={model.entities} />
+      {(model.entities?.length ?? 0) > 0 && (
+        <SectionCard title="Entities" icon={Database} iconColor="text-emerald-600">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {model.entities.map((entity: Entity) => (
+              <div key={entity.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">{entity.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{entity.description}</p>
+                {entity.key_fields?.length > 0 && (
+                  <div className="border-t border-gray-100 pt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Fields</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {entity.key_fields.map(f => (
+                        <span key={f.name} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-700" title={f.description}>
+                          <span className="font-medium">{f.name}</span>
+                          <span className="text-gray-400">{f.type}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {entity.lifecycle?.states?.length > 0 && (
+                  <div className="border-t border-gray-100 pt-3 mt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Lifecycle</p>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {entity.lifecycle.states.map((s, i) => (
+                        <span key={s} className="flex items-center gap-1 text-[11px]">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-medium">{s}</span>
+                          {i < entity.lifecycle.states.length - 1 && <span className="text-gray-300">→</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {/* Journeys */}
-      <Section title="Journeys" items={model.journeys} />
+      {(model.journeys?.length ?? 0) > 0 && (
+        <SectionCard title="Journeys" icon={Route} iconColor="text-violet-600">
+          <div className="space-y-4">
+            {model.journeys.map((journey: Journey) => (
+              <div key={journey.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <h3 className="text-sm font-semibold text-gray-900">{journey.name}</h3>
+                  {journey.primary_actor && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 whitespace-nowrap">{journey.primary_actor}</span>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mb-3">{journey.success_outcome}</p>
+                {journey.steps?.length > 0 && (
+                  <div className="border-t border-gray-100 pt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">{journey.steps.length} Steps</p>
+                    <ol className="space-y-2">
+                      {journey.steps.map(step => (
+                        <li key={step.order} className="flex items-start gap-2.5 text-xs">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700 flex-shrink-0 mt-0.5">{step.order}</span>
+                          <div>
+                            <span className="font-medium text-gray-900">{step.title}</span>
+                            <span className="text-gray-500 ml-1">— {step.detail}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+                {journey.preconditions?.length > 0 && (
+                  <div className="border-t border-gray-100 pt-3 mt-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Preconditions</p>
+                    <ul className="flex flex-wrap gap-1.5">
+                      {journey.preconditions.map((p, i) => (
+                        <span key={i} className="text-[11px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{p}</span>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {/* Business Rules */}
-      <Section title="Business Rules" items={model.businessRules} />
+      {(model.businessRules?.length ?? 0) > 0 && (
+        <SectionCard title="Business Rules" icon={Scale} iconColor="text-amber-600">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {model.businessRules.map((rule: BusinessRule) => (
+              <div key={rule.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+                <p className="text-sm text-gray-900 font-medium mb-2">{rule.description}</p>
+                <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                  {rule.source && <span>Source: <span className="font-medium text-gray-700">{rule.source}</span></span>}
+                  {rule.applies_to?.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      Applies to: {rule.applies_to.map(a => (
+                        <span key={a} className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium">{a}</span>
+                      ))}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Constraints */}
+      {(model.constraints?.length ?? 0) > 0 && (
+        <SectionCard title="Constraints" icon={Lock} iconColor="text-rose-600">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {model.constraints.map((c: Constraint) => (
+              <div key={c.id} className="flex items-start gap-3 rounded-lg border border-gray-200 p-4">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 whitespace-nowrap mt-0.5">{c.type}</span>
+                <p className="text-sm text-gray-700">{c.constraint}</p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Open Questions */}
+      {(model.openQuestions?.length ?? 0) > 0 && (
+        <SectionCard title="Open Questions" icon={HelpCircle} iconColor="text-gray-500">
+          <div className="space-y-3">
+            {model.openQuestions.map((q: OpenQuestion) => {
+              const statusColor = q.status === 'resolved' ? 'bg-green-50 text-green-700' : q.status === 'deferred' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
+              return (
+                <div key={q.id} className="rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="text-sm font-medium text-gray-900">{q.question}</p>
+                    <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded whitespace-nowrap ${statusColor}`}>{q.status}</span>
+                  </div>
+                  <p className="text-sm text-gray-600">{q.reason}</p>
+                  {q.resolution && (
+                    <p className="mt-2 text-xs px-2 py-1.5 rounded bg-green-50 text-green-800">
+                      <span className="font-semibold">Resolution: </span>{q.resolution}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </SectionCard>
+      )}
     </div>
   )
 }
 
-function StatCard({ label, count }: { label: string; count: number }) {
-  return (
-    <div className="rounded-lg bg-gray-50 px-4 py-3">
-      <div className="text-2xl font-bold text-gray-900">{count}</div>
-      <div className="text-xs text-gray-600">{label}</div>
-    </div>
-  )
-}
-
-function Section({
-  title,
-  items,
-}: {
+function SectionCard({ title, icon: Icon, iconColor, children }: {
   title: string
-  items: Array<{ id: string; name: string; description: string }>
+  icon: React.ComponentType<{ className?: string }>
+  iconColor: string
+  children: React.ReactNode
 }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">{title}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-lg border border-gray-200 bg-white p-4 hover:bg-gray-50 transition-colors"
-          >
-            <h3 className="text-sm font-medium text-gray-900">{item.name}</h3>
-            <p className="mt-1 text-sm text-gray-600">{item.description}</p>
-          </div>
-        ))}
+      <div className="flex items-center gap-2 mb-4">
+        <Icon className={`h-4.5 w-4.5 ${iconColor}`} />
+        <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
       </div>
+      {children}
     </div>
   )
 }
