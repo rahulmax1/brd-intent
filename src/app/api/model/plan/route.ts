@@ -4,13 +4,13 @@ import { getCurrentModel } from '@/lib/model-store'
 import { SECTION_TYPE_TO_MODEL_KEY } from '@/domain/intent-model/types'
 import type { SectionType } from '@/domain/intent-model/types'
 
-const BEDROCK_MODEL = 'anthropic.claude-sonnet-4-20250514-v1:0'
+const BEDROCK_MODEL = 'us.anthropic.claude-sonnet-4-20250514-v1:0'
 
 let _client: AnthropicBedrock | null = null
 function getClient() {
   if (!_client) {
     _client = new AnthropicBedrock({
-      awsRegion: process.env.AWS_REGION ?? 'ap-southeast-2',
+      awsRegion: process.env.AWS_REGION ?? 'us-east-1',
     })
   }
   return _client

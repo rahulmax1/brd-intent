@@ -90,11 +90,11 @@ async function generateIntentModel(
   projectName: string
 ): Promise<object> {
   const AnthropicBedrock = (await import('@anthropic-ai/bedrock-sdk')).default
-  const BEDROCK_MODEL = 'anthropic.claude-sonnet-4-20250514-v1:0'
+  const BEDROCK_MODEL = 'us.anthropic.claude-sonnet-4-20250514-v1:0'
 
   try {
     const client = new AnthropicBedrock({
-      awsRegion: process.env.AWS_REGION ?? 'ap-southeast-2',
+      awsRegion: process.env.AWS_REGION ?? 'us-east-1',
     })
 
     const allDocuments = documentContents.join('\n\n')
