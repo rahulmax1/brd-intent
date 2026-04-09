@@ -1,7 +1,5 @@
 // Document Upload API
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
 import { prisma } from '@/lib/db'
 
 type RouteContext = {
@@ -47,28 +45,15 @@ export async function POST(
       }
     }
 
-    // Create uploads directory
-    const uploadsDir = join(process.cwd(), 'uploads', projectId)
-    await mkdir(uploadsDir, { recursive: true })
-
-    // Process each file
+    // Process each file — extract text and store in database
     const documents = []
     for (const file of files) {
-      // Generate unique filename
-      const timestamp = Date.now()
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-      const filename = `${timestamp}-${sanitizedName}`
-      const storagePath = join(uploadsDir, filename)
-
-      // Save file
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
-      await writeFile(storagePath, buffer)
+      const textContent = buffer.toString('utf-8')
 
-      // Determine category from filename or default to UPLOAD
       const category = determineCategory(file.name)
 
-      // Create document record
       const document = await prisma.document.create({
         data: {
           projectId,
@@ -76,22 +61,15 @@ export async function POST(
           originalFilename: file.name,
           mimeType: file.type || 'application/octet-stream',
           sizeBytes: file.size,
-          storagePath: storagePath,
+          storagePath: 'db',
           label: file.name,
           category: category as any,
-          processingStatus: 'PENDING',
+          processingStatus: 'COMPLETED',
+          extractedText: textContent,
         },
       })
 
       documents.push(document)
-
-      // TODO: Trigger async text extraction
-      // For now, we'll mark as COMPLETED immediately
-      // In production, this would be a background job
-      await prisma.document.update({
-        where: { id: document.id },
-        data: { processingStatus: 'COMPLETED' },
-      })
     }
 
     return NextResponse.json({ documents }, { status: 201 })
@@ -124,14 +102,6 @@ export async function DELETE(
 
     if (!document) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 })
-    }
-
-    // Delete file from disk (best effort)
-    try {
-      const { unlink } = await import('fs/promises')
-      await unlink(document.storagePath)
-    } catch {
-      // File may already be gone
     }
 
     await prisma.document.delete({ where: { id: documentId } })

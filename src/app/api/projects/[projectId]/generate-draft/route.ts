@@ -1,7 +1,6 @@
 // Generate Draft Intent Model API
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { readFile } from 'fs/promises'
 
 type RouteContext = {
   params: Promise<{ projectId: string }>
@@ -38,14 +37,11 @@ export async function POST(
       )
     }
 
-    // Read document contents
+    // Read document contents from database
     const documentContents: string[] = []
     for (const doc of project.documents) {
-      try {
-        const content = await readFile(doc.storagePath, 'utf-8')
-        documentContents.push(`=== ${doc.filename} ===\n${content}`)
-      } catch (err) {
-        console.error(`Failed to read document ${doc.id}:`, err)
+      if (doc.extractedText) {
+        documentContents.push(`=== ${doc.filename} ===\n${doc.extractedText}`)
       }
     }
 
