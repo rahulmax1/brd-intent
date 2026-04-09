@@ -110,6 +110,8 @@ export default function DraftPage({ params }: Props) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ phase: 'DRAFT' }),
             })
+          } else {
+            throw new Error('Failed to regenerate draft. Please try again.')
           }
           return
         }
