@@ -473,24 +473,27 @@ function ModelPreview({ model }: { model: IntentModel }) {
 
       {/* Actors */}
       {(model.actors?.length ?? 0) > 0 && (
-        <SectionCard title="Actors" icon={Shield} iconColor="text-blue-600">
+        <SectionCard title="Actors" count={model.actors.length} icon={Shield} iconColor="text-blue-600">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {model.actors.map((actor: Actor) => (
               <div key={actor.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
-                <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <IdBadge id={actor.id} />
                   <h3 className="text-sm font-semibold text-gray-900">{actor.name}</h3>
                   {actor.auth && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 whitespace-nowrap">{actor.auth}</span>
+                    <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 whitespace-nowrap">{actor.auth}</span>
                   )}
                 </div>
                 <p className="text-sm text-gray-600 mb-3">{actor.description}</p>
                 {actor.responsibilities?.length > 0 && (
                   <div className="border-t border-gray-100 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Responsibilities</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                      {actor.responsibilities.length} Responsibilities
+                    </p>
                     <ul className="space-y-1.5">
                       {actor.responsibilities.map(r => (
                         <li key={r.id} className="flex items-start gap-2 text-xs text-gray-600">
-                          <span className="mt-1 h-1 w-1 rounded-full bg-gray-400 flex-shrink-0" />
+                          <IdBadge id={r.id} small />
                           <span>{r.description}</span>
                         </li>
                       ))}
@@ -505,15 +508,20 @@ function ModelPreview({ model }: { model: IntentModel }) {
 
       {/* Entities */}
       {(model.entities?.length ?? 0) > 0 && (
-        <SectionCard title="Entities" icon={Database} iconColor="text-emerald-600">
+        <SectionCard title="Entities" count={model.entities.length} icon={Database} iconColor="text-emerald-600">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {model.entities.map((entity: Entity) => (
               <div key={entity.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">{entity.name}</h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <IdBadge id={entity.id} />
+                  <h3 className="text-sm font-semibold text-gray-900">{entity.name}</h3>
+                </div>
                 <p className="text-sm text-gray-600 mb-3">{entity.description}</p>
                 {entity.key_fields?.length > 0 && (
                   <div className="border-t border-gray-100 pt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Fields</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                      {entity.key_fields.length} Fields
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {entity.key_fields.map(f => (
                         <span key={f.name} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-700" title={f.description}>
@@ -526,7 +534,9 @@ function ModelPreview({ model }: { model: IntentModel }) {
                 )}
                 {entity.lifecycle?.states?.length > 0 && (
                   <div className="border-t border-gray-100 pt-3 mt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Lifecycle</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                      Lifecycle — {entity.lifecycle.states.length} states
+                    </p>
                     <div className="flex items-center gap-1 flex-wrap">
                       {entity.lifecycle.states.map((s, i) => (
                         <span key={s} className="flex items-center gap-1 text-[11px]">
@@ -545,14 +555,15 @@ function ModelPreview({ model }: { model: IntentModel }) {
 
       {/* Journeys */}
       {(model.journeys?.length ?? 0) > 0 && (
-        <SectionCard title="Journeys" icon={Route} iconColor="text-violet-600">
+        <SectionCard title="Journeys" count={model.journeys.length} icon={Route} iconColor="text-violet-600">
           <div className="space-y-4">
             {model.journeys.map((journey: Journey) => (
               <div key={journey.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
-                <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <IdBadge id={journey.id} />
                   <h3 className="text-sm font-semibold text-gray-900">{journey.name}</h3>
                   {journey.primary_actor && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 whitespace-nowrap">{journey.primary_actor}</span>
+                    <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 whitespace-nowrap">{journey.primary_actor}</span>
                   )}
                 </div>
                 <p className="text-sm text-gray-600 mb-3">{journey.success_outcome}</p>
@@ -574,7 +585,9 @@ function ModelPreview({ model }: { model: IntentModel }) {
                 )}
                 {journey.preconditions?.length > 0 && (
                   <div className="border-t border-gray-100 pt-3 mt-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Preconditions</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
+                      {journey.preconditions.length} Preconditions
+                    </p>
                     <ul className="flex flex-wrap gap-1.5">
                       {journey.preconditions.map((p, i) => (
                         <span key={i} className="text-[11px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{p}</span>
@@ -590,15 +603,18 @@ function ModelPreview({ model }: { model: IntentModel }) {
 
       {/* Business Rules */}
       {(model.businessRules?.length ?? 0) > 0 && (
-        <SectionCard title="Business Rules" icon={Scale} iconColor="text-amber-600">
+        <SectionCard title="Business Rules" count={model.businessRules.length} icon={Scale} iconColor="text-amber-600">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {model.businessRules.map((rule: BusinessRule) => (
               <div key={rule.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <IdBadge id={rule.id} />
+                </div>
                 <p className="text-sm text-gray-900 font-medium mb-2">{rule.description}</p>
-                <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                <div className="flex items-center gap-3 flex-wrap text-[11px] text-gray-500">
                   {rule.source && <span>Source: <span className="font-medium text-gray-700">{rule.source}</span></span>}
                   {rule.applies_to?.length > 0 && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 flex-wrap">
                       Applies to: {rule.applies_to.map(a => (
                         <span key={a} className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-medium">{a}</span>
                       ))}
@@ -613,11 +629,14 @@ function ModelPreview({ model }: { model: IntentModel }) {
 
       {/* Constraints */}
       {(model.constraints?.length ?? 0) > 0 && (
-        <SectionCard title="Constraints" icon={Lock} iconColor="text-rose-600">
+        <SectionCard title="Constraints" count={model.constraints.length} icon={Lock} iconColor="text-rose-600">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {model.constraints.map((c: Constraint) => (
               <div key={c.id} className="flex items-start gap-3 rounded-lg border border-gray-200 p-4">
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 whitespace-nowrap mt-0.5">{c.type}</span>
+                <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                  <IdBadge id={c.id} small />
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 whitespace-nowrap">{c.type}</span>
+                </div>
                 <p className="text-sm text-gray-700">{c.constraint}</p>
               </div>
             ))}
@@ -627,15 +646,18 @@ function ModelPreview({ model }: { model: IntentModel }) {
 
       {/* Open Questions */}
       {(model.openQuestions?.length ?? 0) > 0 && (
-        <SectionCard title="Open Questions" icon={HelpCircle} iconColor="text-gray-500">
+        <SectionCard title="Open Questions" count={model.openQuestions.length} icon={HelpCircle} iconColor="text-gray-500">
           <div className="space-y-3">
             {model.openQuestions.map((q: OpenQuestion) => {
               const statusColor = q.status === 'resolved' ? 'bg-green-50 text-green-700' : q.status === 'deferred' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
               return (
                 <div key={q.id} className="rounded-lg border border-gray-200 p-4">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className="text-sm font-medium text-gray-900">{q.question}</p>
-                    <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded whitespace-nowrap ${statusColor}`}>{q.status}</span>
+                    <div className="flex items-center gap-2">
+                      <IdBadge id={q.id} />
+                      <p className="text-sm font-medium text-gray-900">{q.question}</p>
+                    </div>
+                    <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded whitespace-nowrap flex-shrink-0 ${statusColor}`}>{q.status}</span>
                   </div>
                   <p className="text-sm text-gray-600">{q.reason}</p>
                   {q.resolution && (
@@ -653,8 +675,9 @@ function ModelPreview({ model }: { model: IntentModel }) {
   )
 }
 
-function SectionCard({ title, icon: Icon, iconColor, children }: {
+function SectionCard({ title, count, icon: Icon, iconColor, children }: {
   title: string
+  count: number
   icon: React.ComponentType<{ className?: string }>
   iconColor: string
   children: React.ReactNode
@@ -664,8 +687,21 @@ function SectionCard({ title, icon: Icon, iconColor, children }: {
       <div className="flex items-center gap-2 mb-4">
         <Icon className={`h-4.5 w-4.5 ${iconColor}`} />
         <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{count}</span>
       </div>
       {children}
     </div>
+  )
+}
+
+function IdBadge({ id, small }: { id: string; small?: boolean }) {
+  return (
+    <code
+      className={`font-mono rounded bg-gray-100 text-gray-500 flex-shrink-0 ${
+        small ? 'text-[9px] px-1 py-0.5' : 'text-[10px] px-1.5 py-0.5'
+      }`}
+    >
+      {id}
+    </code>
   )
 }
