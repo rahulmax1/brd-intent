@@ -1,8 +1,6 @@
 // Artifact Generation API
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { writeFile, mkdir, readFile } from 'fs/promises'
-import { join } from 'path'
 
 type RouteContext = {
   params: Promise<{ projectId: string; type: string }>
@@ -30,27 +28,10 @@ export async function GET(
       return NextResponse.json({ error: 'Artifact not found' }, { status: 404 })
     }
 
-    // Read file
-    const content = await readFile(artifact.storagePath, 'utf-8')
+    // Content is stored in storagePath field
+    const content = artifact.storagePath
 
-    // Determine content type
-    const mimeTypes: Record<string, string> = {
-      '.md': 'text/markdown',
-      '.ts': 'text/plain',
-      '.sql': 'text/plain',
-      '.json': 'application/json',
-    }
-
-    const ext = artifact.filename.substring(artifact.filename.lastIndexOf('.'))
-    const contentType = mimeTypes[ext] || 'text/plain'
-
-    // Return file
-    return new NextResponse(content, {
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${artifact.filename}"`,
-      },
-    })
+    return NextResponse.json({ content, filename: artifact.filename })
   } catch (error) {
     console.error('Failed to download artifact:', error)
     return NextResponse.json(
@@ -139,38 +120,31 @@ export async function POST(
         return NextResponse.json({ error: 'Unsupported artifact type' }, { status: 400 })
     }
 
-    // Save artifact to disk
-    const artifactsDir = join(process.cwd(), 'artifacts', projectId)
-    await mkdir(artifactsDir, { recursive: true })
-
-    const storagePath = join(artifactsDir, filename)
-    await writeFile(storagePath, content, 'utf-8')
-
-    // Create or update artifact record
+    // Store content in database (storagePath field repurposed for content)
     const artifact = await prisma.generatedArtifact.upsert({
       where: {
         projectId_artifactType: {
           projectId,
-          artifactType: type,
+          artifactType: type as any,
         },
       },
       create: {
         projectId,
         modelVersionId: modelVersion.id,
-        artifactType: type,
+        artifactType: type as any,
         filename,
-        storagePath,
+        storagePath: content,
         sizeBytes: Buffer.byteLength(content, 'utf-8'),
       },
       update: {
         modelVersionId: modelVersion.id,
         filename,
-        storagePath,
+        storagePath: content,
         sizeBytes: Buffer.byteLength(content, 'utf-8'),
       },
     })
 
-    return NextResponse.json({ artifact }, { status: 201 })
+    return NextResponse.json({ artifact, content }, { status: 201 })
   } catch (error) {
     console.error('Failed to generate artifact:', error)
     return NextResponse.json(

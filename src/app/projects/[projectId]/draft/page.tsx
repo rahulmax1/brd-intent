@@ -172,15 +172,10 @@ export default function DraftPage({ params }: Props) {
       const res = await fetch(`/api/projects/${projectId}/artifacts/BRD`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
-        // Fetch the generated content
-        const getRes = await fetch(`/api/projects/${projectId}/artifacts/BRD`)
-        if (getRes.ok) {
-          const artData = await getRes.json()
-          setBrdContent(artData.artifact?.content ?? artData.content ?? null)
-        }
+        setBrdContent(data.content ?? null)
       }
     } catch {
-      // Fallback: generate BRD client-side from model
+      setError('Failed to generate BRD')
     } finally {
       setBrdLoading(false)
     }
