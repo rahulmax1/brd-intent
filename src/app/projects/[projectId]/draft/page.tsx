@@ -478,8 +478,8 @@ function ModelPreview({ model }: { model: IntentModel }) {
             {model.actors.map((actor: Actor) => (
               <div key={actor.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
                 <div className="flex items-center gap-2 mb-2">
-                  <IdBadge id={actor.id} />
                   <h3 className="text-sm font-semibold text-gray-900">{actor.name}</h3>
+                  <IdBadge id={actor.id} />
                   {actor.auth && (
                     <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 whitespace-nowrap">{actor.auth}</span>
                   )}
@@ -513,8 +513,8 @@ function ModelPreview({ model }: { model: IntentModel }) {
             {model.entities.map((entity: Entity) => (
               <div key={entity.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
                 <div className="flex items-center gap-2 mb-1">
-                  <IdBadge id={entity.id} />
                   <h3 className="text-sm font-semibold text-gray-900">{entity.name}</h3>
+                  <IdBadge id={entity.id} />
                 </div>
                 <p className="text-sm text-gray-600 mb-3">{entity.description}</p>
                 {entity.key_fields?.length > 0 && (
@@ -560,8 +560,8 @@ function ModelPreview({ model }: { model: IntentModel }) {
             {model.journeys.map((journey: Journey) => (
               <div key={journey.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
                 <div className="flex items-center gap-2 mb-1">
-                  <IdBadge id={journey.id} />
                   <h3 className="text-sm font-semibold text-gray-900">{journey.name}</h3>
+                  <IdBadge id={journey.id} />
                   {journey.primary_actor && (
                     <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 whitespace-nowrap">{journey.primary_actor}</span>
                   )}
@@ -607,7 +607,7 @@ function ModelPreview({ model }: { model: IntentModel }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {model.businessRules.map((rule: BusinessRule) => (
               <div key={rule.id} className="rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 justify-end">
                   <IdBadge id={rule.id} />
                 </div>
                 <p className="text-sm text-gray-900 font-medium mb-2">{rule.description}</p>
@@ -654,8 +654,8 @@ function ModelPreview({ model }: { model: IntentModel }) {
                 <div key={q.id} className="rounded-lg border border-gray-200 p-4">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2">
-                      <IdBadge id={q.id} />
                       <p className="text-sm font-medium text-gray-900">{q.question}</p>
+                      <IdBadge id={q.id} />
                     </div>
                     <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded whitespace-nowrap flex-shrink-0 ${statusColor}`}>{q.status}</span>
                   </div>
