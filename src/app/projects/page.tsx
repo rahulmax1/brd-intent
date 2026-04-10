@@ -193,6 +193,7 @@ function ProjectsEmptyState() {
 function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: string) => void }) {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -204,13 +205,17 @@ function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: s
 
   async function handleDelete() {
     setDeleting(true)
+    setDeleteError(null)
     try {
       const res = await fetch(`/api/projects/${project.id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to delete')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Delete failed (${res.status})`)
+      }
       setDeleteOpen(false)
       onDelete(project.id)
     } catch (err) {
-      console.error('Delete failed:', err)
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed')
     } finally {
       setDeleting(false)
     }
@@ -278,18 +283,30 @@ function ProjectCard({ project, onDelete }: { project: Project; onDelete: (id: s
         </div>
       </Link>
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+      <AlertDialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          setDeleteOpen(open)
+          if (!open) setDeleteError(null)
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
-              This will archive <strong>{project.name}</strong> and all its data. This action cannot be undone.
+              This will permanently delete <strong>{project.name}</strong> and all its documents, model versions, and generated artifacts. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteError && (
+            <p className="text-sm text-red-600">{deleteError}</p>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={(e) => {
+                e.preventDefault()
+                handleDelete()
+              }}
               disabled={deleting}
               className="bg-red-600 hover:bg-red-700 text-white"
             >

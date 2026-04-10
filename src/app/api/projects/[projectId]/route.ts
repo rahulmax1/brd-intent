@@ -140,7 +140,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/projects/:projectId - Archive project
+// DELETE /api/projects/:projectId - Permanently delete project and all related data
 export async function DELETE(
   request: NextRequest,
   context: RouteContext
@@ -148,29 +148,22 @@ export async function DELETE(
   try {
     const { projectId } = await context.params
 
-    // Check if project exists
-    const existing = await prisma.project.findUnique({
+    await prisma.project.delete({
       where: { id: projectId },
     })
 
-    if (!existing) {
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      (error as { code: string }).code === 'P2025'
+    ) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
-
-    // Soft delete by setting archivedAt
-    const project = await prisma.project.update({
-      where: { id: projectId },
-      data: {
-        archivedAt: new Date(),
-        phase: 'ARCHIVED',
-      },
-    })
-
-    return NextResponse.json({ project })
-  } catch (error) {
-    console.error('Failed to archive project:', error)
+    console.error('Failed to delete project:', error)
     return NextResponse.json(
-      { error: 'Failed to archive project' },
+      { error: 'Failed to delete project' },
       { status: 500 }
     )
   }

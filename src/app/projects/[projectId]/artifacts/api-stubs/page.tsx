@@ -88,8 +88,8 @@ export default function ApiStubsPreviewPage({ params }: Props) {
             {error}
           </div>
         ) : (
-          <div className="rounded-xl border border-gray-200 bg-gray-900 p-6 overflow-x-auto">
-            <pre className="text-sm text-gray-100 font-mono"><code>{content}</code></pre>
+          <div className="rounded-xl border border-gray-200 bg-gray-900 p-6 min-h-[70vh]">
+            <pre className="text-sm text-gray-100 font-mono whitespace-pre-wrap break-words"><code>{content}</code></pre>
           </div>
         )}
       </div>

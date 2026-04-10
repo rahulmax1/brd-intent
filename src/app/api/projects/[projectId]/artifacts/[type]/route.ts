@@ -42,10 +42,12 @@ export async function GET(
       return NextResponse.json({ error: 'Artifact not found' }, { status: 404 })
     }
 
-    // Content is stored in storagePath field
-    const content = artifact.storagePath
-
-    return NextResponse.json({ content, filename: artifact.filename })
+    return new NextResponse(artifact.storagePath, {
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'x-artifact-filename': artifact.filename,
+      },
+    })
   } catch (error) {
     console.error('Failed to download artifact:', error)
     return NextResponse.json(
