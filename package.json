@@ -8,14 +8,7 @@
     "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src/",
-    "generate:ai-types": "tsx scripts/generate-ai-types.ts",
-    "generate:api-stubs": "tsx scripts/generate-api-stubs.ts",
-    "generate:migration": "tsx scripts/generate-migration.ts",
-    "intent:snapshot": "bash scripts/snapshot.sh",
-    "export:contract": "tsx scripts/export-contract.ts",
-    "generate:schemas": "tsx scripts/generate-zod-schemas.ts",
-    "validate:model": "tsx scripts/validate-model-sync.ts"
+    "lint": "eslint src/"
   },
   "keywords": [],
   "author": "",

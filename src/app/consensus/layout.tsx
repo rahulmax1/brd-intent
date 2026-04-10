@@ -1,5 +1,0 @@
-import { ModelLayout } from '@/components/review/model-layout'
-
-export default function ConsensusLayout({ children }: { children: React.ReactNode }) {
-  return <ModelLayout>{children}</ModelLayout>
-}

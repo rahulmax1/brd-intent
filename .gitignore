@@ -3,8 +3,13 @@ node_modules/
 .superpowers/
 .vercel
 .env*.local
-model-history.json
 .playwright-mcp/
-docs/uploads/
-docs/generated/
 .claude/settings.local.json
+
+# runtime output (regenerable, not committed)
+artifacts/
+uploads/
+graphify-out/
+dev-server.log
+tsconfig.tsbuildinfo
+.DS_Store
