@@ -1,5 +1,6 @@
 // Document Upload API
 import { NextRequest, NextResponse } from 'next/server'
+import type { DocumentCategory } from '@prisma/client'
 import { prisma } from '@/lib/db'
 
 type RouteContext = {
@@ -63,7 +64,7 @@ export async function POST(
           sizeBytes: file.size,
           storagePath: 'db',
           label: file.name,
-          category: category as any,
+          category: category as DocumentCategory,
           processingStatus: 'COMPLETED',
           extractedText: textContent,
         },

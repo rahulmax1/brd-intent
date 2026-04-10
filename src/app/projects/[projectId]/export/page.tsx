@@ -1,11 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, FileText, Code, Database, Download, CheckCircle2, Clock, Eye } from 'lucide-react'
+import { ArrowLeft, Loader2, FileText, Code, Database, Download, CheckCircle2, Eye } from 'lucide-react'
 import { ProjectStepper } from '@/components/project-stepper'
 import { ProjectActionsMenu } from '@/components/project-actions-menu'
+
+type ArtifactCardConfig = {
+  label: string
+  description: string
+  icon: ComponentType<{ className?: string }>
+  previewPath: string
+}
 
 type Project = {
   id: string
@@ -221,7 +228,6 @@ export default function ExportPage({ params }: Props) {
               {Object.entries(artifactConfig).map(([type, config]) => {
                 const artifact = artifactsByType[type]
                 const isGenerating = generating[type]
-                const Icon = config.icon
 
                 return (
                   <ArtifactCard
@@ -255,7 +261,7 @@ function ArtifactCard({
 }: {
   projectId: string
   type: string
-  config: any
+  config: ArtifactCardConfig
   artifact?: Artifact
   isGenerating: boolean
   onGenerate: (type: string) => void

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Download, Code } from 'lucide-react'
 
@@ -10,7 +9,6 @@ type Props = {
 }
 
 export default function TypesPreviewPage({ params }: Props) {
-  const router = useRouter()
   const [projectId, setProjectId] = useState<string | null>(null)
   const [content, setContent] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)

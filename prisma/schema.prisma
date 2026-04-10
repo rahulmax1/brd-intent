@@ -38,6 +38,7 @@ model Project {
 enum Phase {
   UPLOAD
   DRAFT
+  REVIEW
   CONSENSUS
   EXPORT
   ARCHIVED

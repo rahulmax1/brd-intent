@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2, Sparkles, CheckCircle2, LayoutGrid, Code2, Upload, RefreshCw, AlertTriangle, Shield, Database, Route, Scale, Lock, HelpCircle, FileText, Search, X, ChevronRight, ChevronLeft, MessageSquare, ArrowUpRight } from 'lucide-react'
+import { ArrowLeft, Loader2, Sparkles, CheckCircle2, LayoutGrid, Code2, Upload, RefreshCw, AlertTriangle, Shield, Database, Route, Scale, Lock, HelpCircle, FileText, Search, X, ChevronRight, ChevronLeft } from 'lucide-react'
 import type { IntentModel, Actor, Entity, Journey, BusinessRule, Constraint, OpenQuestion } from '@/domain/intent-model/types'
 import { ProjectStepper } from '@/components/project-stepper'
 import { ProjectActionsMenu } from '@/components/project-actions-menu'

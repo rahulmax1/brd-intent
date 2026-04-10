@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Upload, FileText, Loader2, CheckCircle2, XCircle, Clock, Eye, RefreshCw, Sparkles } from 'lucide-react'
-import { ProjectStepper } from '@/components/project-stepper'
 import { ProjectActionsMenu } from '@/components/project-actions-menu'
 
 type ModelVersion = {

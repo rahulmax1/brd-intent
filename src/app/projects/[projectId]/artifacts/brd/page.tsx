@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Download, FileText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -12,7 +11,6 @@ type Props = {
 }
 
 export default function BRDPreviewPage({ params }: Props) {
-  const router = useRouter()
   const [projectId, setProjectId] = useState<string | null>(null)
   const [content, setContent] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)

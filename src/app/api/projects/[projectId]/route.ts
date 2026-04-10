@@ -1,5 +1,6 @@
 // Project Detail API - Get, Update, Delete
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma, Phase } from '@prisma/client'
 import { prisma } from '@/lib/db'
 
 type RouteContext = {
@@ -94,12 +95,7 @@ export async function PATCH(
     }
 
     // Build update data
-    const updateData: {
-      name?: string
-      description?: string | null
-      phase?: string
-      phaseData?: object
-    } = {}
+    const updateData: Prisma.ProjectUpdateInput = {}
 
     if (body.name !== undefined) {
       if (body.name.trim().length < 3) {
@@ -117,7 +113,7 @@ export async function PATCH(
 
     if (body.phase !== undefined) {
       // Validate phase transition
-      const validPhases = ['UPLOAD', 'DRAFT', 'REVIEW', 'CONSENSUS', 'EXPORT', 'ARCHIVED']
+      const validPhases: Phase[] = ['UPLOAD', 'DRAFT', 'REVIEW', 'CONSENSUS', 'EXPORT', 'ARCHIVED']
       if (!validPhases.includes(body.phase)) {
         return NextResponse.json({ error: 'Invalid phase' }, { status: 400 })
       }
@@ -131,7 +127,7 @@ export async function PATCH(
     // Update project
     const project = await prisma.project.update({
       where: { id: projectId },
-      data: updateData as any,
+      data: updateData,
     })
 
     return NextResponse.json({ project })

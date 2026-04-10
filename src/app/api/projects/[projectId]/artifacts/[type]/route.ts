@@ -1,9 +1,23 @@
 // Artifact Generation API
 import { NextRequest, NextResponse } from 'next/server'
+import type { ArtifactType } from '@prisma/client'
 import { prisma } from '@/lib/db'
 
 type RouteContext = {
   params: Promise<{ projectId: string; type: string }>
+}
+
+type NamedItem = {
+  id?: string
+  name: string
+  description: string
+}
+
+type ModelData = {
+  actors?: NamedItem[]
+  entities?: NamedItem[]
+  journeys?: NamedItem[]
+  businessRules?: NamedItem[]
 }
 
 // GET /api/projects/:projectId/artifacts/:type - Download artifact
@@ -19,7 +33,7 @@ export async function GET(
       where: {
         projectId_artifactType: {
           projectId,
-          artifactType: type as any,
+          artifactType: type as ArtifactType,
         },
       },
     })
@@ -50,8 +64,8 @@ export async function POST(
     const { projectId, type } = await context.params
 
     // Validate artifact type
-    const validTypes = ['BRD', 'TYPESCRIPT_TYPES', 'ZOD_SCHEMAS', 'API_STUBS', 'MIGRATION']
-    if (!validTypes.includes(type)) {
+    const validTypes: ArtifactType[] = ['BRD', 'TYPESCRIPT_TYPES', 'ZOD_SCHEMAS', 'API_STUBS', 'MIGRATION']
+    if (!validTypes.includes(type as ArtifactType)) {
       return NextResponse.json({ error: 'Invalid artifact type' }, { status: 400 })
     }
 
@@ -78,42 +92,36 @@ export async function POST(
     }
 
     const modelVersion = project.intentModelVersions[0]
-    const modelData = modelVersion.modelData as any
+    const modelData = modelVersion.modelData as ModelData
 
     // Generate artifact content based on type
     let content: string
     let filename: string
-    let mimeType: string
 
     switch (type) {
       case 'BRD':
         content = generateBRD(project.name, modelData)
         filename = `${sanitizeFilename(project.name)}-brd.md`
-        mimeType = 'text/markdown'
         break
 
       case 'TYPESCRIPT_TYPES':
         content = generateTypeScriptTypes(modelData)
         filename = `${sanitizeFilename(project.name)}-types.ts`
-        mimeType = 'text/plain'
         break
 
       case 'ZOD_SCHEMAS':
         content = generateZodSchemas(modelData)
         filename = `${sanitizeFilename(project.name)}-schemas.ts`
-        mimeType = 'text/plain'
         break
 
       case 'API_STUBS':
         content = generateAPIStubs(modelData)
         filename = `${sanitizeFilename(project.name)}-api-stubs.ts`
-        mimeType = 'text/plain'
         break
 
       case 'MIGRATION':
         content = generateMigration(modelData)
         filename = `${sanitizeFilename(project.name)}-migration.sql`
-        mimeType = 'text/plain'
         break
 
       default:
@@ -125,13 +133,13 @@ export async function POST(
       where: {
         projectId_artifactType: {
           projectId,
-          artifactType: type as any,
+          artifactType: type as ArtifactType,
         },
       },
       create: {
         projectId,
         modelVersionId: modelVersion.id,
-        artifactType: type as any,
+        artifactType: type as ArtifactType,
         filename,
         storagePath: content,
         sizeBytes: Buffer.byteLength(content, 'utf-8'),
@@ -161,7 +169,7 @@ function sanitizeFilename(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
-function generateBRD(projectName: string, modelData: any): string {
+function generateBRD(projectName: string, modelData: ModelData): string {
   const { actors = [], entities = [], journeys = [], businessRules = [] } = modelData
 
   return `# Business Requirements Document: ${projectName}
@@ -178,7 +186,7 @@ function generateBRD(projectName: string, modelData: any): string {
 
 ## 1. Actors
 
-${actors.map((actor: any) => `### ${actor.name}
+${actors.map((actor) => `### ${actor.name}
 
 ${actor.description}
 `).join('\n')}
@@ -187,7 +195,7 @@ ${actor.description}
 
 ## 2. Entities
 
-${entities.map((entity: any) => `### ${entity.name}
+${entities.map((entity) => `### ${entity.name}
 
 ${entity.description}
 `).join('\n')}
@@ -196,7 +204,7 @@ ${entity.description}
 
 ## 3. User Journeys
 
-${journeys.map((journey: any) => `### ${journey.name}
+${journeys.map((journey) => `### ${journey.name}
 
 ${journey.description}
 `).join('\n')}
@@ -205,7 +213,7 @@ ${journey.description}
 
 ## 4. Business Rules
 
-${businessRules.map((rule: any, index: number) => `### BR-${String(index + 1).padStart(3, '0')}: ${rule.name}
+${businessRules.map((rule, index) => `### BR-${String(index + 1).padStart(3, '0')}: ${rule.name}
 
 ${rule.description}
 `).join('\n')}
@@ -216,12 +224,12 @@ ${rule.description}
 `
 }
 
-function generateTypeScriptTypes(modelData: any): string {
+function generateTypeScriptTypes(modelData: ModelData): string {
   const { entities = [] } = modelData
 
   let output = `// TypeScript Type Definitions\n// Generated from Intent Model\n\n`
 
-  entities.forEach((entity: any) => {
+  entities.forEach((entity) => {
     const typeName = toPascalCase(entity.name)
     output += `export type ${typeName} = {\n`
     output += `  id: string\n`
@@ -234,12 +242,12 @@ function generateTypeScriptTypes(modelData: any): string {
   return output
 }
 
-function generateZodSchemas(modelData: any): string {
+function generateZodSchemas(modelData: ModelData): string {
   const { entities = [] } = modelData
 
   let output = `import { z } from 'zod'\n\n// Zod Validation Schemas\n// Generated from Intent Model\n\n`
 
-  entities.forEach((entity: any) => {
+  entities.forEach((entity) => {
     const schemaName = `${toCamelCase(entity.name)}Schema`
     output += `export const ${schemaName} = z.object({\n`
     output += `  id: z.string().uuid(),\n`
@@ -252,12 +260,12 @@ function generateZodSchemas(modelData: any): string {
   return output
 }
 
-function generateAPIStubs(modelData: any): string {
+function generateAPIStubs(modelData: ModelData): string {
   const { entities = [] } = modelData
 
   let output = `// API Route Stubs\n// Generated from Intent Model\n// Copy these to your src/app/api directory\n\n`
 
-  entities.forEach((entity: any) => {
+  entities.forEach((entity) => {
     const routeName = toKebabCase(entity.name)
     output += `// src/app/api/${routeName}/route.ts\n`
     output += `export async function GET() {\n`
@@ -274,12 +282,12 @@ function generateAPIStubs(modelData: any): string {
   return output
 }
 
-function generateMigration(modelData: any): string {
+function generateMigration(modelData: ModelData): string {
   const { entities = [] } = modelData
 
   let output = `-- Database Migration\n-- Generated from Intent Model\n\n`
 
-  entities.forEach((entity: any) => {
+  entities.forEach((entity) => {
     const tableName = toSnakeCase(entity.name)
     output += `CREATE TABLE ${tableName} (\n`
     output += `  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n`

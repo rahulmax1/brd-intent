@@ -308,7 +308,6 @@ const ALL_TYPES = Object.keys(TYPE_COLORS) as Array<keyof typeof TYPE_COLORS>
 export function Graph3D({ model }: { model: IntentModel }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const graphRef = useRef<ForceGraph3DInstance | null>(null)
-  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null)
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
   const [hiddenNodes, setHiddenNodes] = useState<Set<string>>(new Set())
@@ -499,7 +498,7 @@ export function Graph3D({ model }: { model: IntentModel }) {
             typeof n === 'string' ? n : (n as GraphNode)?.id ?? ''
 
           // Find all links connected to this node
-          const directLinks = allLinks.filter((link: any) => {
+          const directLinks = allLinks.filter((link: GraphLink) => {
             const src = getNodeId(link.source)
             const tgt = getNodeId(link.target)
             return src === node.id || tgt === node.id
@@ -512,7 +511,6 @@ export function Graph3D({ model }: { model: IntentModel }) {
             }, i * 80)
           }
         })
-        .onNodeHover((node: GraphNode | null) => setHoveredNode(node))
 
       // Tighter forces — bring nodes closer, strong center pull for orphans
       const charge = graph.d3Force('charge')

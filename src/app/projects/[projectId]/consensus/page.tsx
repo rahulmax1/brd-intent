@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, CheckCircle2, AlertCircle, Clock, MessageSquare } from 'lucide-react'
-import { ReviewItemSkeleton } from '@/components/skeleton'
 import { ProjectStepper } from '@/components/project-stepper'
 import { ProjectActionsMenu } from '@/components/project-actions-menu'
 
